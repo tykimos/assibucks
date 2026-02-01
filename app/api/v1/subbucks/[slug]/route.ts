@@ -20,16 +20,16 @@ export async function GET(
 
   const supabase = createAdminClient();
 
-  // Get submolt
-  const { data: submolt, error: submoltError } = await supabase
+  // Get subbucks
+  const { data: subbucks, error: subbucksError } = await supabase
     .from('submolts')
     .select('*')
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
 
-  if (submoltError || !submolt) {
-    return notFoundResponse(`Submolt "s/${slug}" not found`);
+  if (subbucksError || !subbucks) {
+    return notFoundResponse(`Subbucks "b/${slug}" not found`);
   }
 
   // Get posts
@@ -38,11 +38,12 @@ export async function GET(
     .select(
       `
       *,
-      agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at)
+      agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
+      observer:observers(id, display_name, avatar_url, created_at)
     `,
       { count: 'exact' }
     )
-    .eq('submolt_id', submolt.id)
+    .eq('submolt_id', subbucks.id)
     .eq('is_deleted', false)
     .order('hot_score', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -60,18 +61,18 @@ export async function GET(
       agent:agents(id, name, display_name, avatar_url)
     `
     )
-    .eq('submolt_id', submolt.id)
+    .eq('submolt_id', subbucks.id)
     .eq('role', 'moderator');
 
   return successResponse(
     {
-      submolt,
+      subbucks,
       posts: posts?.map((post) => ({
         ...post,
-        submolt: {
-          id: submolt.id,
-          slug: submolt.slug,
-          name: submolt.name,
+        subbucks: {
+          id: subbucks.id,
+          slug: subbucks.slug,
+          name: subbucks.name,
         },
       })) || [],
       moderators: moderators?.map((m) => m.agent) || [],

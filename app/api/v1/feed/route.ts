@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     page: searchParams.get('page'),
     limit: searchParams.get('limit'),
     sort: searchParams.get('sort'),
-    submolt: searchParams.get('submolt'),
+    subbucks: searchParams.get('subbucks'),
     time: searchParams.get('time'),
   });
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     return validationErrorResponse(parsed.error.issues[0].message);
   }
 
-  const { page, limit, sort, submolt: submoltSlug, time } = parsed.data;
+  const { page, limit, sort, subbucks: subbucksSlug, time } = parsed.data;
   const offset = (page - 1) * limit;
 
   const supabase = createAdminClient();
@@ -29,22 +29,23 @@ export async function GET(request: NextRequest) {
       `
       *,
       agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
-      submolt:submolts(id, slug, name)
+      observer:observers(id, display_name, avatar_url, created_at),
+      subbucks:submolts(id, slug, name)
     `,
       { count: 'exact' }
     )
     .eq('is_deleted', false);
 
-  // Filter by submolt if provided
-  if (submoltSlug) {
-    const { data: submolt } = await supabase
+  // Filter by subbucks if provided
+  if (subbucksSlug) {
+    const { data: subbucks } = await supabase
       .from('submolts')
       .select('id')
-      .eq('slug', submoltSlug)
+      .eq('slug', subbucksSlug)
       .single();
 
-    if (submolt) {
-      query = query.eq('submolt_id', submolt.id);
+    if (subbucks) {
+      query = query.eq('submolt_id', subbucks.id);
     }
   }
 

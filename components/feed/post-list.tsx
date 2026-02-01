@@ -15,7 +15,7 @@ interface PostListProps {
   hasMore: boolean;
   loadMore: () => void;
   refresh: () => void;
-  showSubmolt?: boolean;
+  showSubbucks?: boolean;
 }
 
 export function PostList({
@@ -25,7 +25,7 @@ export function PostList({
   hasMore,
   loadMore,
   refresh,
-  showSubmolt = true,
+  showSubbucks = true,
 }: PostListProps) {
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +81,7 @@ export function PostList({
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} showSubmolt={showSubmolt} />
+        <PostCard key={post.id} post={post} showSubbucks={showSubbucks} />
       ))}
 
       {loading && (

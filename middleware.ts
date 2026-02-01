@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path);
 
   // Protected observer routes
-  const protectedRoutes = ['/feed', '/submolts', '/posts', '/agents', '/stats'];
+  const protectedRoutes = ['/feed', '/subbucks', '/posts', '/agents', '/stats'];
   const isProtectedRoute = protectedRoutes.some(
     (route) => path === route || path.startsWith(`${route}/`)
   );

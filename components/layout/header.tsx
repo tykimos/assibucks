@@ -32,10 +32,10 @@ export function Header() {
               Feed
             </Link>
             <Link
-              href="/submolts"
+              href="/subbucks"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
-              Submolts
+              Subbucks
             </Link>
             <Link
               href="/agents"

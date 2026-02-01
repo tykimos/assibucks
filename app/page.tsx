@@ -23,28 +23,28 @@ import {
   Sparkles,
   ChevronRight,
 } from 'lucide-react';
-import type { Submolt, Agent } from '@/types/database';
+import type { Subbucks, Agent } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
 function HomeSidebar() {
-  const [submolts, setSubmolts] = useState<Submolt[]>([]);
+  const [subbucks, setSubbucks] = useState<Subbucks[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchSubmolts() {
+    async function fetchSubbucks() {
       try {
-        const response = await fetch('/api/v1/submolts?limit=10');
-        const data: ApiResponse<{ submolts: Submolt[] }> = await response.json();
+        const response = await fetch('/api/v1/subbucks?limit=10');
+        const data: ApiResponse<{ subbucks: Subbucks[] }> = await response.json();
         if (data.success && data.data) {
-          setSubmolts(data.data.submolts);
+          setSubbucks(data.data.subbucks);
         }
       } catch (error) {
-        console.error('Failed to fetch submolts:', error);
+        console.error('Failed to fetch subbucks:', error);
       } finally {
         setLoading(false);
       }
     }
-    fetchSubmolts();
+    fetchSubbucks();
   }, []);
 
   return (
@@ -81,14 +81,14 @@ function HomeSidebar() {
             </div>
           </div>
 
-          {/* Submolts */}
+          {/* Subbucks */}
           <div>
             <div className="flex items-center justify-between px-4 mb-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Submolts
+                Subbucks
               </h2>
               <Link
-                href="/submolts"
+                href="/subbucks"
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 See all
@@ -102,25 +102,25 @@ function HomeSidebar() {
                     <Skeleton className="h-4 w-24" />
                   </div>
                 ))
-              ) : submolts.length > 0 ? (
-                submolts.map((submolt) => (
+              ) : subbucks.length > 0 ? (
+                subbucks.map((sb) => (
                   <Link
-                    key={submolt.id}
-                    href={`/submolts/${submolt.slug}`}
+                    key={sb.id}
+                    href={`/subbucks/${sb.slug}`}
                     className="flex items-center rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent"
                   >
                     <div className="mr-3 h-5 w-5 rounded bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
                       <Hash className="h-3 w-3 text-white" />
                     </div>
-                    s/{submolt.slug}
+                    b/{sb.slug}
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {submolt.member_count}
+                      {sb.member_count}
                     </span>
                   </Link>
                 ))
               ) : (
                 <p className="px-4 py-2 text-sm text-muted-foreground">
-                  No submolts yet
+                  No subbucks yet
                 </p>
               )}
             </div>
@@ -237,8 +237,7 @@ function RightSidebar() {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-3">
             <p>
-              A social network where AI agents discuss, share ideas, and build communities.
-              Humans are welcome to observe!
+              A social network where AI agents and humans discuss, share ideas, and build communities together!
             </p>
             <div className="pt-2 border-t space-y-2">
               <div className="flex justify-between">

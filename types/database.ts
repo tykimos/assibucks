@@ -1,5 +1,6 @@
 export type VoteType = 'up' | 'down';
 export type PostType = 'text' | 'link' | 'image';
+export type AuthorType = 'agent' | 'human';
 
 export interface Agent {
   id: string;
@@ -38,7 +39,14 @@ export interface Observer {
   updated_at: string;
 }
 
-export interface Submolt {
+export interface ObserverPublic {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+export interface Subbucks {
   id: string;
   slug: string;
   name: string;
@@ -54,10 +62,15 @@ export interface Submolt {
   updated_at: string;
 }
 
+// Alias for backward compatibility
+export type Submolt = Subbucks;
+
 export interface Post {
   id: string;
-  agent_id: string;
-  submolt_id: string;
+  agent_id: string | null;
+  observer_id: string | null;
+  author_type: AuthorType;
+  subbucks_id: string;
   title: string;
   content: string | null;
   url: string | null;
@@ -75,14 +88,19 @@ export interface Post {
 }
 
 export interface PostWithRelations extends Post {
-  agent: AgentPublic;
-  submolt: Submolt;
+  agent: AgentPublic | null;
+  observer: ObserverPublic | null;
+  subbucks: Subbucks;
+  // Alias for backward compatibility
+  submolt?: Subbucks;
 }
 
 export interface Comment {
   id: string;
   post_id: string;
-  agent_id: string;
+  agent_id: string | null;
+  observer_id: string | null;
+  author_type: AuthorType;
   parent_id: string | null;
   path: string;
   depth: number;
@@ -96,13 +114,15 @@ export interface Comment {
 }
 
 export interface CommentWithRelations extends Comment {
-  agent: AgentPublic;
+  agent: AgentPublic | null;
+  observer: ObserverPublic | null;
   replies?: CommentWithRelations[];
 }
 
 export interface Vote {
   id: string;
-  agent_id: string;
+  agent_id: string | null;
+  observer_id: string | null;
   post_id: string | null;
   comment_id: string | null;
   vote_type: VoteType;
@@ -117,13 +137,16 @@ export interface RateLimit {
   request_count: number;
 }
 
-export interface SubmoltMember {
+export interface SubbucksMember {
   id: string;
-  submolt_id: string;
+  subbucks_id: string;
   agent_id: string;
   role: string;
   joined_at: string;
 }
+
+// Alias for backward compatibility
+export type SubmoltMember = SubbucksMember;
 
 export interface Database {
   public: {
@@ -139,9 +162,9 @@ export interface Database {
         Update: Partial<Observer>;
       };
       submolts: {
-        Row: Submolt;
-        Insert: Omit<Submolt, 'id' | 'member_count' | 'post_count' | 'is_active' | 'created_at' | 'updated_at'>;
-        Update: Partial<Submolt>;
+        Row: Subbucks;
+        Insert: Omit<Subbucks, 'id' | 'member_count' | 'post_count' | 'is_active' | 'created_at' | 'updated_at'>;
+        Update: Partial<Subbucks>;
       };
       posts: {
         Row: Post;
@@ -164,9 +187,9 @@ export interface Database {
         Update: Partial<RateLimit>;
       };
       submolt_members: {
-        Row: SubmoltMember;
-        Insert: Omit<SubmoltMember, 'id' | 'joined_at'>;
-        Update: Partial<SubmoltMember>;
+        Row: SubbucksMember;
+        Insert: Omit<SubbucksMember, 'id' | 'joined_at'>;
+        Update: Partial<SubbucksMember>;
       };
     };
   };

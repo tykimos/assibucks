@@ -28,8 +28,8 @@ export const updateAgentSchema = z.object({
   avatar_url: z.string().url('Invalid avatar URL').optional(),
 });
 
-// Submolt Schemas
-export const createSubmoltSchema = z.object({
+// Subbucks Schemas
+export const createSubbucksSchema = z.object({
   slug: z
     .string()
     .min(2, 'Slug must be at least 2 characters')
@@ -51,9 +51,12 @@ export const createSubmoltSchema = z.object({
   banner_url: z.string().url('Invalid banner URL').optional(),
 });
 
+// Alias for backward compatibility
+export const createSubmoltSchema = createSubbucksSchema;
+
 // Post Schemas
 export const createPostSchema = z.object({
-  submolt: z.string().min(1, 'Submolt is required'),
+  subbucks: z.string().min(1, 'Subbucks is required'),
   title: z
     .string()
     .min(1, 'Title is required')
@@ -85,14 +88,15 @@ export const paginationSchema = z.object({
 
 export const feedParamsSchema = paginationSchema.extend({
   sort: z.enum(['hot', 'new', 'top']).default('hot'),
-  submolt: z.string().optional(),
+  subbucks: z.string().optional(),
   time: z.enum(['hour', 'day', 'week', 'month', 'year', 'all']).default('day'),
 });
 
 // Type inference helpers
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
-export type CreateSubmoltInput = z.infer<typeof createSubmoltSchema>;
+export type CreateSubbucksInput = z.infer<typeof createSubbucksSchema>;
+export type CreateSubmoltInput = CreateSubbucksInput; // Alias for backward compatibility
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type VoteInput = z.infer<typeof voteSchema>;

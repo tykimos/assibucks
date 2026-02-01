@@ -15,7 +15,7 @@ import {
   internalErrorResponse,
   rateLimitedResponse,
 } from '@/lib/api';
-import { createSubmoltSchema, paginationSchema } from '@/lib/api/validation';
+import { createSubbucksSchema, paginationSchema } from '@/lib/api/validation';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  const { data: submolts, error, count } = await supabase
+  const { data: subbucks, error, count } = await supabase
     .from('submolts')
     .select('*', { count: 'exact' })
     .eq('is_active', true)
@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    console.error('Error fetching submolts:', error);
-    return internalErrorResponse('Failed to fetch submolts');
+    console.error('Error fetching subbucks:', error);
+    return internalErrorResponse('Failed to fetch subbucks');
   }
 
   return successResponse(
-    { submolts },
+    { subbucks },
     {
       page,
       limit,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     return validationErrorResponse('Invalid JSON body');
   }
 
-  const parsed = createSubmoltSchema.safeParse(body);
+  const parsed = createSubbucksSchema.safeParse(body);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.issues[0].message, rateLimitHeaders);
   }
@@ -99,11 +99,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (existing) {
-    return conflictResponse(`Submolt "s/${slug}" already exists`, rateLimitHeaders);
+    return conflictResponse(`Subbucks "b/${slug}" already exists`, rateLimitHeaders);
   }
 
-  // Create submolt
-  const { data: submolt, error } = await supabase
+  // Create subbucks
+  const { data: subbucks, error } = await supabase
     .from('submolts')
     .insert({
       slug,
@@ -118,16 +118,16 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('Error creating submolt:', error);
-    return internalErrorResponse('Failed to create submolt');
+    console.error('Error creating subbucks:', error);
+    return internalErrorResponse('Failed to create subbucks');
   }
 
   // Add creator as a member with moderator role
   await supabase.from('submolt_members').insert({
-    submolt_id: submolt.id,
+    submolt_id: subbucks.id,
     agent_id: agent.id,
     role: 'moderator',
   });
 
-  return createdResponse({ submolt }, rateLimitHeaders);
+  return createdResponse({ subbucks }, rateLimitHeaders);
 }

@@ -6,46 +6,45 @@ import { PostCard } from '@/components/feed/post-card';
 import { AgentBadge } from '@/components/agents/agent-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Hash, Users, FileText, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { Submolt, PostWithRelations, AgentPublic } from '@/types/database';
+import type { Subbucks, PostWithRelations, AgentPublic } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
-interface SubmoltDetailData {
-  submolt: Submolt;
+interface SubbucksDetailData {
+  subbucks: Subbucks;
   posts: PostWithRelations[];
   moderators: AgentPublic[];
 }
 
-export default function SubmoltDetailPage() {
+export default function SubbucksDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const [data, setData] = useState<SubmoltDetailData | null>(null);
+  const [data, setData] = useState<SubbucksDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchSubmolt() {
+    async function fetchSubbucks() {
       try {
-        const response = await fetch(`/api/v1/submolts/${slug}`);
-        const result: ApiResponse<SubmoltDetailData> = await response.json();
+        const response = await fetch(`/api/v1/subbucks/${slug}`);
+        const result: ApiResponse<SubbucksDetailData> = await response.json();
 
         if (!result.success) {
-          setError(result.error?.message || 'Failed to load submolt');
+          setError(result.error?.message || 'Failed to load subbucks');
           return;
         }
 
         setData(result.data || null);
       } catch (err) {
-        setError('Failed to load submolt');
+        setError('Failed to load subbucks');
       } finally {
         setLoading(false);
       }
     }
 
-    fetchSubmolt();
+    fetchSubbucks();
   }, [slug]);
 
   if (loading) {
@@ -70,13 +69,13 @@ export default function SubmoltDetailPage() {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <Hash className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg font-medium">{error || 'Submolt not found'}</p>
+        <p className="text-lg font-medium">{error || 'Subbucks not found'}</p>
       </div>
     );
   }
 
-  const { submolt, posts, moderators } = data;
-  const createdAgo = formatDistanceToNow(new Date(submolt.created_at), {
+  const { subbucks, posts, moderators } = data;
+  const createdAgo = formatDistanceToNow(new Date(subbucks.created_at), {
     addSuffix: true,
   });
 
@@ -89,8 +88,8 @@ export default function SubmoltDetailPage() {
               <Hash className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">s/{submolt.slug}</h1>
-              <p className="text-muted-foreground">{submolt.name}</p>
+              <h1 className="text-2xl font-bold">b/{subbucks.slug}</h1>
+              <p className="text-muted-foreground">{subbucks.name}</p>
             </div>
           </div>
 
@@ -101,7 +100,7 @@ export default function SubmoltDetailPage() {
             </div>
           ) : (
             posts.map((post) => (
-              <PostCard key={post.id} post={post} showSubmolt={false} />
+              <PostCard key={post.id} post={post} showSubbucks={false} />
             ))
           )}
         </div>
@@ -112,14 +111,14 @@ export default function SubmoltDetailPage() {
               <CardTitle className="text-lg">About</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {submolt.description && (
-                <p className="text-sm">{submolt.description}</p>
+              {subbucks.description && (
+                <p className="text-sm">{subbucks.description}</p>
               )}
 
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{submolt.member_count}</span>
+                  <span className="font-medium">{subbucks.member_count}</span>
                   <span className="text-muted-foreground">members</span>
                 </div>
               </div>
@@ -127,7 +126,7 @@ export default function SubmoltDetailPage() {
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{submolt.post_count}</span>
+                  <span className="font-medium">{subbucks.post_count}</span>
                   <span className="text-muted-foreground">posts</span>
                 </div>
               </div>
@@ -151,13 +150,13 @@ export default function SubmoltDetailPage() {
                 </>
               )}
 
-              {submolt.rules && (
+              {subbucks.rules && (
                 <>
                   <Separator />
                   <div>
                     <h4 className="text-sm font-medium mb-2">Rules</h4>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {submolt.rules}
+                      {subbucks.rules}
                     </p>
                   </div>
                 </>

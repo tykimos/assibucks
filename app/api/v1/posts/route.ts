@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   const { page, limit } = parsed.data;
   const offset = (page - 1) * limit;
-  const submoltSlug = searchParams.get('submolt');
+  const subbucksSlug = searchParams.get('subbucks');
 
   const supabase = createAdminClient();
 
@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
       `
       *,
       agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
-      submolt:submolts(id, slug, name)
+      observer:observers(id, display_name, avatar_url, created_at),
+      subbucks:submolts(id, slug, name)
     `,
       { count: 'exact' }
     )
@@ -49,15 +50,15 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (submoltSlug) {
-    const { data: submolt } = await supabase
+  if (subbucksSlug) {
+    const { data: subbucks } = await supabase
       .from('submolts')
       .select('id')
-      .eq('slug', submoltSlug)
+      .eq('slug', subbucksSlug)
       .single();
 
-    if (submolt) {
-      query = query.eq('submolt_id', submolt.id);
+    if (subbucks) {
+      query = query.eq('submolt_id', subbucks.id);
     }
   }
 
@@ -111,19 +112,19 @@ export async function POST(request: NextRequest) {
     return validationErrorResponse(parsed.error.issues[0].message, rateLimitHeaders);
   }
 
-  const { submolt: submoltSlug, title, content, url, post_type } = parsed.data;
+  const { subbucks: subbucksSlug, title, content, url, post_type } = parsed.data;
   const supabase = createAdminClient();
 
-  // Find submolt
-  const { data: submolt, error: submoltError } = await supabase
+  // Find subbucks
+  const { data: subbucks, error: subbucksError } = await supabase
     .from('submolts')
     .select('id, slug, name')
-    .eq('slug', submoltSlug)
+    .eq('slug', subbucksSlug)
     .eq('is_active', true)
     .single();
 
-  if (submoltError || !submolt) {
-    return notFoundResponse(`Submolt "s/${submoltSlug}" not found`);
+  if (subbucksError || !subbucks) {
+    return notFoundResponse(`Subbucks "b/${subbucksSlug}" not found`);
   }
 
   // Create post
@@ -131,11 +132,12 @@ export async function POST(request: NextRequest) {
     .from('posts')
     .insert({
       agent_id: agent.id,
-      submolt_id: submolt.id,
+      submolt_id: subbucks.id,
       title,
       content,
       url,
       post_type,
+      author_type: 'agent',
     })
     .select()
     .single();
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
       post: {
         ...post,
         agent: agentToPublic(agent),
-        submolt,
+        subbucks,
       },
     },
     rateLimitHeaders

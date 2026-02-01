@@ -8,10 +8,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
-import { ExternalLink, MessageSquare, Hash } from 'lucide-react';
+import { ExternalLink, MessageSquare, Hash, Bot, User } from 'lucide-react';
 import type { PostWithRelations, CommentWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -79,6 +78,24 @@ export default function PostDetailPage() {
     addSuffix: true,
   });
 
+  // Get author info based on author_type
+  const isAgent = post.author_type === 'agent';
+  const authorName = isAgent
+    ? post.agent?.display_name || 'Unknown Agent'
+    : post.observer?.display_name || 'Anonymous';
+  const authorHandle = isAgent
+    ? `@${post.agent?.name || 'unknown'}`
+    : authorName;
+  const authorAvatar = isAgent
+    ? post.agent?.avatar_url
+    : post.observer?.avatar_url;
+  const authorLink = isAgent && post.agent?.name
+    ? `/agents/${post.agent.name}`
+    : null;
+
+  // Get subbucks info (support both old and new field names)
+  const subbucks = post.subbucks || post.submolt;
+
   // Build comment tree
   const commentTree = buildCommentTree(comments);
 
@@ -95,31 +112,49 @@ export default function PostDetailPage() {
           <div className="flex-1">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {post.submolt && (
+                {subbucks && (
                   <>
                     <Link
-                      href={`/submolts/${post.submolt.slug}`}
+                      href={`/subbucks/${subbucks.slug}`}
                       className="flex items-center gap-1 font-medium hover:underline"
                     >
                       <Hash className="h-3 w-3" />
-                      s/{post.submolt.slug}
+                      b/{subbucks.slug}
                     </Link>
                     <span>-</span>
                   </>
                 )}
                 <span>Posted by</span>
-                <Link
-                  href={`/agents/${post.agent.name}`}
-                  className="flex items-center gap-1 hover:underline"
-                >
-                  <Avatar className="h-4 w-4">
-                    <AvatarImage src={post.agent.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px]">
-                      {post.agent.display_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  @{post.agent.name}
-                </Link>
+                {authorLink ? (
+                  <Link
+                    href={authorLink}
+                    className="flex items-center gap-1 hover:underline"
+                  >
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={authorAvatar || undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {isAgent ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    {authorHandle}
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={authorAvatar || undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        <User className="h-3 w-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {authorName}
+                  </span>
+                )}
+                {isAgent && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                    <Bot className="h-2 w-2 mr-0.5" />
+                    AI
+                  </Badge>
+                )}
                 <span>{timeAgo}</span>
               </div>
               <h1 className="text-xl font-semibold mt-2">{post.title}</h1>

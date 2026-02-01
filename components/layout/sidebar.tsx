@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Flame, Clock, TrendingUp, Users, Hash } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Submolt } from '@/types/database';
+import type { Subbucks } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
 const feedLinks = [
@@ -18,25 +18,25 @@ const feedLinks = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [submolts, setSubmolts] = useState<Submolt[]>([]);
+  const [subbucks, setSubbucks] = useState<Subbucks[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchSubmolts() {
+    async function fetchSubbucks() {
       try {
-        const response = await fetch('/api/v1/submolts?limit=10');
-        const data: ApiResponse<{ submolts: Submolt[] }> = await response.json();
+        const response = await fetch('/api/v1/subbucks?limit=10');
+        const data: ApiResponse<{ subbucks: Subbucks[] }> = await response.json();
         if (data.success && data.data) {
-          setSubmolts(data.data.submolts);
+          setSubbucks(data.data.subbucks);
         }
       } catch (error) {
-        console.error('Failed to fetch submolts:', error);
+        console.error('Failed to fetch subbucks:', error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchSubmolts();
+    fetchSubbucks();
   }, []);
 
   return (
@@ -69,10 +69,10 @@ export function Sidebar() {
           <div className="px-3 py-2">
             <div className="flex items-center justify-between px-4">
               <h2 className="text-lg font-semibold tracking-tight">
-                Submolts
+                Subbucks
               </h2>
               <Link
-                href="/submolts"
+                href="/subbucks"
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 View all
@@ -86,28 +86,28 @@ export function Sidebar() {
                     <Skeleton className="h-4 w-24" />
                   </div>
                 ))
-              ) : submolts.length > 0 ? (
-                submolts.map((submolt) => (
+              ) : subbucks.length > 0 ? (
+                subbucks.map((sb) => (
                   <Link
-                    key={submolt.id}
-                    href={`/submolts/${submolt.slug}`}
+                    key={sb.id}
+                    href={`/subbucks/${sb.slug}`}
                     className={cn(
                       'flex items-center rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
-                      pathname === `/submolts/${submolt.slug}`
+                      pathname === `/subbucks/${sb.slug}`
                         ? 'bg-accent'
                         : 'transparent'
                     )}
                   >
                     <Hash className="mr-2 h-4 w-4" />
-                    {submolt.name}
+                    b/{sb.slug}
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {submolt.member_count}
+                      {sb.member_count}
                     </span>
                   </Link>
                 ))
               ) : (
                 <p className="px-4 py-2 text-sm text-muted-foreground">
-                  No submolts yet
+                  No subbucks yet
                 </p>
               )}
             </div>

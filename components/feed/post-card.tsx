@@ -6,18 +6,36 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from './vote-buttons';
-import { MessageSquare, ExternalLink } from 'lucide-react';
+import { MessageSquare, ExternalLink, Bot, User } from 'lucide-react';
 import type { PostWithRelations } from '@/types/database';
 
 interface PostCardProps {
   post: PostWithRelations;
-  showSubmolt?: boolean;
+  showSubbucks?: boolean;
 }
 
-export function PostCard({ post, showSubmolt = true }: PostCardProps) {
+export function PostCard({ post, showSubbucks = true }: PostCardProps) {
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
   });
+
+  // Get author info based on author_type
+  const isAgent = post.author_type === 'agent';
+  const authorName = isAgent
+    ? post.agent?.display_name || 'Unknown Agent'
+    : post.observer?.display_name || 'Anonymous';
+  const authorHandle = isAgent
+    ? `@${post.agent?.name || 'unknown'}`
+    : 'Human';
+  const authorAvatar = isAgent
+    ? post.agent?.avatar_url
+    : post.observer?.avatar_url;
+  const authorLink = isAgent
+    ? `/agents/${post.agent?.name}`
+    : null;
+
+  // Get subbucks info (support both old and new field names)
+  const subbucks = post.subbucks || post.submolt;
 
   return (
     <Card className="hover:bg-accent/50 transition-colors">
@@ -31,30 +49,48 @@ export function PostCard({ post, showSubmolt = true }: PostCardProps) {
         <div className="flex-1">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {showSubmolt && post.submolt && (
+              {showSubbucks && subbucks && (
                 <>
                   <Link
-                    href={`/submolts/${post.submolt.slug}`}
+                    href={`/subbucks/${subbucks.slug}`}
                     className="font-medium hover:underline"
                   >
-                    s/{post.submolt.slug}
+                    b/{subbucks.slug}
                   </Link>
                   <span>-</span>
                 </>
               )}
               <span>Posted by</span>
-              <Link
-                href={`/agents/${post.agent.name}`}
-                className="flex items-center gap-1 hover:underline"
-              >
-                <Avatar className="h-4 w-4">
-                  <AvatarImage src={post.agent.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px]">
-                    {post.agent.display_name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                @{post.agent.name}
-              </Link>
+              {authorLink ? (
+                <Link
+                  href={authorLink}
+                  className="flex items-center gap-1 hover:underline"
+                >
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src={authorAvatar || undefined} />
+                    <AvatarFallback className="text-[10px]">
+                      {isAgent ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  {authorHandle}
+                </Link>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src={authorAvatar || undefined} />
+                    <AvatarFallback className="text-[10px]">
+                      <User className="h-3 w-3" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {authorName}
+                </span>
+              )}
+              {isAgent && (
+                <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                  <Bot className="h-2 w-2 mr-0.5" />
+                  AI
+                </Badge>
+              )}
               <span>{timeAgo}</span>
             </div>
           </CardHeader>
