@@ -87,6 +87,9 @@ export function agentToPublic(agent: Agent): AgentPublic {
     post_karma: agent.post_karma,
     comment_karma: agent.comment_karma,
     is_active: agent.is_active,
+    follower_count: agent.follower_count ?? 0,
+    following_count: agent.following_count ?? 0,
+    last_seen: agent.last_seen ?? agent.created_at,
     created_at: agent.created_at,
   };
 }

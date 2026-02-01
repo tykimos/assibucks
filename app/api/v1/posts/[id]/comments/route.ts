@@ -16,7 +16,14 @@ import {
   internalErrorResponse,
   rateLimitedResponse,
 } from '@/lib/api';
-import { createCommentSchema, paginationSchema } from '@/lib/api/validation';
+import { createCommentSchema } from '@/lib/api/validation';
+import { z } from 'zod';
+
+const commentQuerySchema = z.object({
+  page: z.preprocess((val) => val ?? 1, z.coerce.number().int().min(1)),
+  limit: z.preprocess((val) => val ?? 100, z.coerce.number().int().min(1).max(500)),
+  sort: z.preprocess((val) => val ?? 'top', z.enum(['top', 'new', 'controversial'])),
+});
 
 export async function GET(
   request: NextRequest,
@@ -24,12 +31,18 @@ export async function GET(
 ) {
   const { id: postId } = await params;
   const { searchParams } = new URL(request.url);
-  const parsed = paginationSchema.safeParse({
+
+  const parsed = commentQuerySchema.safeParse({
     page: searchParams.get('page'),
     limit: searchParams.get('limit'),
+    sort: searchParams.get('sort'),
   });
 
-  const { page = 1, limit = 100 } = parsed.success ? parsed.data : {};
+  if (!parsed.success) {
+    return validationErrorResponse(parsed.error.issues[0].message);
+  }
+
+  const { page, limit, sort } = parsed.data;
   const offset = (page - 1) * limit;
 
   const supabase = createAdminClient();
@@ -46,30 +59,53 @@ export async function GET(
     return notFoundResponse('Post not found');
   }
 
-  const { data: comments, error, count } = await supabase
+  // Build query with appropriate ordering
+  let query = supabase
     .from('comments')
     .select(
       `
       *,
-      agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at)
+      agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
+      observer:observers(id, display_name, avatar_url)
     `,
       { count: 'exact' }
     )
     .eq('post_id', postId)
-    .eq('is_deleted', false)
-    .order('path', { ascending: true })
-    .range(offset, offset + limit - 1);
+    .eq('is_deleted', false);
+
+  // Apply database-level sorting for top and new
+  if (sort === 'top') {
+    query = query.order('score', { ascending: false }).order('created_at', { ascending: false });
+  } else if (sort === 'new') {
+    query = query.order('created_at', { ascending: false });
+  } else {
+    // For controversial, fetch by path first, then sort in JS
+    query = query.order('path', { ascending: true });
+  }
+
+  const { data: comments, error, count } = await query.range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching comments:', error);
     return internalErrorResponse('Failed to fetch comments');
   }
 
-  // Build comment tree
-  const commentTree = buildCommentTree(comments || []);
+  let processedComments = comments || [];
+
+  // For controversial, sort in JavaScript
+  if (sort === 'controversial') {
+    processedComments = [...processedComments].sort((a, b) => {
+      const aScore = calculateControversy(a.upvotes || 0, a.downvotes || 0);
+      const bScore = calculateControversy(b.upvotes || 0, b.downvotes || 0);
+      return bScore - aScore;
+    });
+  }
+
+  // Build comment tree with sorting applied
+  const commentTree = buildCommentTree(processedComments, sort);
 
   return successResponse(
-    { comments: commentTree },
+    { comments: commentTree, sort },
     {
       page,
       limit,
@@ -182,10 +218,21 @@ interface CommentWithAgent {
   parent_id: string | null;
   agent: unknown;
   replies?: CommentWithAgent[];
+  created_at?: string;
+  upvotes?: number;
+  downvotes?: number;
+  score?: number;
   [key: string]: unknown;
 }
 
-function buildCommentTree(comments: CommentWithAgent[]): CommentWithAgent[] {
+function calculateControversy(upvotes: number, downvotes: number): number {
+  const total = upvotes + downvotes;
+  if (total === 0) return 0;
+  const ratio = Math.min(upvotes, downvotes) / Math.max(upvotes, downvotes);
+  return Math.pow(total, ratio);
+}
+
+function buildCommentTree(comments: CommentWithAgent[], sort: string = 'top'): CommentWithAgent[] {
   const commentMap = new Map<string, CommentWithAgent>();
   const rootComments: CommentWithAgent[] = [];
 
@@ -206,5 +253,25 @@ function buildCommentTree(comments: CommentWithAgent[]): CommentWithAgent[] {
     }
   }
 
+  // Sort replies recursively
+  const sortComments = (arr: CommentWithAgent[]) => {
+    arr.sort((a, b) => {
+      if (sort === 'new') {
+        return new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime();
+      } else if (sort === 'controversial') {
+        return calculateControversy(b.upvotes as number || 0, b.downvotes as number || 0) -
+               calculateControversy(a.upvotes as number || 0, a.downvotes as number || 0);
+      } else { // top
+        return (b.score as number || 0) - (a.score as number || 0);
+      }
+    });
+    for (const comment of arr) {
+      if (comment.replies && comment.replies.length > 0) {
+        sortComments(comment.replies);
+      }
+    }
+  };
+
+  sortComments(rootComments);
   return rootComments;
 }

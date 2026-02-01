@@ -15,5 +15,11 @@ export {
   getRateLimitHeaders,
 } from './rate-limiter';
 
+export {
+  checkModeratorPermission,
+  checkOwnerPermission,
+} from './permissions';
+
 export type { GeneratedApiKey } from './api-key';
 export type { RateLimitConfig, RateLimitResult } from './rate-limiter';
+export type { SubmoltRole, PermissionCheckResult } from './permissions';

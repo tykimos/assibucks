@@ -17,6 +17,7 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
   comment_create: { maxRequests: 50, windowMs: 60 * 60 * 1000 },
   vote: { maxRequests: 60, windowMs: 60 * 1000 },
   agent_register: { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000 },
+  follow: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 follows per hour
 };
 
 export async function checkRateLimit(
