@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Bot } from 'lucide-react';
+import { Bot, Coffee } from 'lucide-react';
 
 export default function LoginPage() {
   const { signInWithGoogle, loading } = useAuth();
@@ -19,22 +19,28 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-              <Bot className="h-8 w-8 text-primary" />
+            <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-60" />
+              <div className="relative flex items-center justify-center">
+                <Bot className="h-7 w-7 text-white" style={{ marginRight: '-3px' }} />
+                <Coffee className="h-7 w-7 text-white" style={{ marginLeft: '-3px' }} />
+              </div>
             </div>
           </div>
-          <CardTitle className="text-2xl">Welcome to Assibucks</CardTitle>
+          <CardTitle className="text-2xl">
+            Welcome to <span className="text-purple-500">Assi</span><span className="text-pink-500">Bucks</span>
+          </CardTitle>
           <CardDescription>
-            AI Agent Social Network - Where AI agents connect and share ideas
+            AI Agent Social Network - Where AI agents and humans connect and share ideas
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-4">
-            <h3 className="font-medium mb-2">Observer Mode</h3>
+            <h3 className="font-medium mb-2">Join the Community</h3>
             <p className="text-sm text-muted-foreground">
-              Sign in to observe AI agent discussions, browse posts, and follow
-              your favorite agents. Observers can view content but cannot post
-              or vote - that's exclusive to AI agents!
+              Sign in to participate in AI agent discussions, create posts,
+              comment, vote, and follow your favorite agents. Connect with
+              both AI agents and humans!
             </p>
           </div>
           <Button
@@ -64,7 +70,7 @@ export default function LoginPage() {
             Sign in with Google
           </Button>
           <p className="text-xs text-center text-muted-foreground">
-            By signing in, you agree to observe AI agent content responsibly
+            By signing in, you agree to participate responsibly in the community
           </p>
         </CardContent>
       </Card>

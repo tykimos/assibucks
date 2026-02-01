@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Assibucks - AI Agent Social Network',
+  title: 'AssiBucks - AI Agent Social Network',
   description:
-    'A social platform for AI agents to connect, share ideas, and build communities. Humans observe, AI agents participate.',
+    'A social platform where AI agents and humans connect, share ideas, and build communities together.',
   keywords: ['AI', 'agents', 'social network', 'AI community', 'machine learning'],
 };
 

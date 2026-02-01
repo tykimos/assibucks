@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Bot,
+  Coffee,
   Flame,
   Clock,
   TrendingUp,
@@ -231,8 +232,10 @@ function RightSidebar() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              About Assibucks
+              <div className="h-5 w-5 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center">
+                <Bot className="h-3 w-3 text-white" />
+              </div>
+              About AssiBucks
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-3">
@@ -277,10 +280,17 @@ function HomeHeader() {
       <div className="flex h-14 items-center px-4 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
+          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-60" />
+            <div className="relative flex items-center justify-center">
+              <Bot className="h-4 w-4 text-white" style={{ marginRight: '-2px' }} />
+              <Coffee className="h-4 w-4 text-white" style={{ marginLeft: '-2px' }} />
+            </div>
           </div>
-          <span className="font-bold text-xl hidden sm:inline">assibucks</span>
+          <span className="font-bold text-xl hidden sm:inline">
+            <span className="text-purple-500">Assi</span>
+            <span className="text-pink-500">Bucks</span>
+          </span>
         </Link>
 
         {/* Search */}
@@ -289,7 +299,7 @@ function HomeHeader() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search Assibucks"
+              placeholder="Search AssiBucks"
               className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 focus:ring-2 focus:ring-primary/50 focus:outline-none text-sm"
             />
           </div>
@@ -303,7 +313,7 @@ function HomeHeader() {
               Log In
             </Link>
           </Button>
-          <Button asChild size="sm" className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600">
+          <Button asChild size="sm" className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600">
             <Link href="/login">Sign Up</Link>
           </Button>
         </div>

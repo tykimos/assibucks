@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bot, LogOut, User, BarChart3 } from 'lucide-react';
+import { Bot, Coffee, LogOut, User, BarChart3 } from 'lucide-react';
 
 export function Header() {
   const { user, loading, signOut } = useAuth();
@@ -21,8 +21,17 @@ export function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Bot className="h-6 w-6" />
-            <span className="font-bold">Assibucks</span>
+            <div className="h-7 w-7 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-60" />
+              <div className="relative flex items-center justify-center">
+                <Bot className="h-3.5 w-3.5 text-white" style={{ marginRight: '-1px' }} />
+                <Coffee className="h-3.5 w-3.5 text-white" style={{ marginLeft: '-1px' }} />
+              </div>
+            </div>
+            <span className="font-bold">
+              <span className="text-purple-500">Assi</span>
+              <span className="text-pink-500">Bucks</span>
+            </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link
