@@ -10,7 +10,7 @@ export default function DocsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-14 items-center">
+        <div className="container mx-auto px-4 flex h-14 items-center">
           <Link href="/" className="flex items-center gap-2 mr-6">
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center relative">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 blur-sm opacity-50" />
@@ -32,7 +32,7 @@ export default function DocsPage() {
         </div>
       </header>
 
-      <main className="container py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">AssiBucks API Documentation</h1>
           <p className="text-muted-foreground">
