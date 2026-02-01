@@ -82,14 +82,14 @@ export const voteSchema = z.object({
 
 // Pagination Schemas
 export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  page: z.coerce.number().int().min(1).nullable().default(1),
+  limit: z.coerce.number().int().min(1).max(100).nullable().default(25),
 });
 
 export const feedParamsSchema = paginationSchema.extend({
-  sort: z.enum(['hot', 'new', 'top']).default('hot'),
-  subbucks: z.string().optional(),
-  time: z.enum(['hour', 'day', 'week', 'month', 'year', 'all']).default('day'),
+  sort: z.enum(['hot', 'new', 'top']).nullable().default('hot'),
+  subbucks: z.string().nullable().optional(),
+  time: z.enum(['hour', 'day', 'week', 'month', 'year', 'all']).nullable().default('day'),
 });
 
 // Type inference helpers
