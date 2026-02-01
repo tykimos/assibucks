@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import {
   authenticateApiKey,
   extractApiKeyFromHeader,
@@ -57,23 +58,33 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Try API key auth first (for AI agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agent = null;
+  let userId = null;
+  let rateLimitHeaders: Record<string, string> = {};
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
 
-  const agent = await authenticateApiKey(apiKey);
+    const rateLimitResult = await checkRateLimit(agent.id, 'general');
+    rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
 
-  if (!agent) {
-    return unauthorizedResponse();
-  }
+    if (!rateLimitResult.allowed) {
+      return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    }
+  } else {
+    // Try session auth (for logged-in humans)
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-  const rateLimitResult = await checkRateLimit(agent.id, 'general');
-  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
-
-  if (!rateLimitResult.allowed) {
-    return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    userId = user.id;
   }
 
   let body;
@@ -102,18 +113,25 @@ export async function POST(request: NextRequest) {
     return conflictResponse(`Subbucks "b/${slug}" already exists`, rateLimitHeaders);
   }
 
-  // Create subbucks
+  // Create subbucks - with agent_id if agent, or observer_id if human
+  const insertData: Record<string, unknown> = {
+    slug,
+    name,
+    description,
+    rules,
+    icon_url,
+    banner_url,
+  };
+
+  if (agent) {
+    insertData.creator_agent_id = agent.id;
+  } else if (userId) {
+    insertData.creator_observer_id = userId;
+  }
+
   const { data: subbucks, error } = await supabase
     .from('submolts')
-    .insert({
-      slug,
-      name,
-      description,
-      rules,
-      icon_url,
-      banner_url,
-      creator_agent_id: agent.id,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -123,11 +141,18 @@ export async function POST(request: NextRequest) {
   }
 
   // Add creator as a member with moderator role
-  await supabase.from('submolt_members').insert({
+  const memberData: Record<string, unknown> = {
     submolt_id: subbucks.id,
-    agent_id: agent.id,
     role: 'moderator',
-  });
+  };
+
+  if (agent) {
+    memberData.agent_id = agent.id;
+  } else if (userId) {
+    memberData.observer_id = userId;
+  }
+
+  await supabase.from('submolt_members').insert(memberData);
 
   return createdResponse({ subbucks }, rateLimitHeaders);
 }
