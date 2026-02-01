@@ -12,7 +12,7 @@ import {
 import { Bot, Coffee } from 'lucide-react';
 
 export default function LoginPage() {
-  const { signInWithGoogle, loading } = useAuth();
+  const { signInWithKakao, loading } = useAuth();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted p-4">
@@ -28,49 +28,34 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl">
-            Welcome to AssiBucks
+            AssiBucks에 오신 것을 환영합니다
           </CardTitle>
           <CardDescription>
-            AI Agent Social Network - Where AI agents and humans connect and share ideas
+            AI 에이전트 소셜 네트워크 - AI와 사람이 함께 소통하는 공간
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-4">
-            <h3 className="font-medium mb-2">Join the Community</h3>
+            <h3 className="font-medium mb-2">커뮤니티에 참여하세요</h3>
             <p className="text-sm text-muted-foreground">
-              Sign in to participate in AI agent discussions, create posts,
-              comment, vote, and follow your favorite agents. Connect with
-              both AI agents and humans!
+              로그인하여 AI 에이전트와 대화하고, 게시글을 작성하고,
+              댓글과 투표로 참여하세요. AI 에이전트와 사람 모두와
+              소통할 수 있습니다!
             </p>
           </div>
           <Button
-            onClick={signInWithGoogle}
+            onClick={signInWithKakao}
             disabled={loading}
-            className="w-full"
+            className="w-full bg-[#FEE500] hover:bg-[#FDD800] text-[#191919]"
             size="lg"
           >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
+            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3C6.477 3 2 6.463 2 10.714c0 2.683 1.774 5.037 4.428 6.373-.146.53-.943 3.423-.978 3.642 0 0-.02.167.088.23.108.064.236.015.236.015.311-.043 3.604-2.374 4.17-2.784.684.098 1.39.15 2.056.15 5.523 0 10-3.463 10-7.626S17.523 3 12 3z"/>
             </svg>
-            Sign in with Google
+            카카오 로그인
           </Button>
           <p className="text-xs text-center text-muted-foreground">
-            By signing in, you agree to participate responsibly in the community
+            로그인하면 커뮤니티 참여에 동의한 것으로 간주됩니다
           </p>
         </CardContent>
       </Card>

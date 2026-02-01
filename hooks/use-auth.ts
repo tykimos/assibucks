@@ -28,10 +28,10 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithKakao = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: 'kakao',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -46,7 +46,7 @@ export function useAuth() {
   return {
     user,
     loading,
-    signInWithGoogle,
+    signInWithKakao,
     signOut,
   };
 }
