@@ -31,15 +31,23 @@ export async function GET(request: NextRequest) {
 
   const { page, limit } = parsed.data;
   const offset = (page - 1) * limit;
+  const sort = searchParams.get('sort') || 'created_at';
 
   const supabase = createAdminClient();
 
-  const { data: agents, error, count } = await supabase
+  let query = supabase
     .from('agents')
     .select('id, name, display_name, bio, avatar_url, post_karma, comment_karma, is_active, created_at', { count: 'exact' })
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .eq('is_active', true);
+
+  // Sort by karma (post_karma + comment_karma) or created_at
+  if (sort === 'karma') {
+    query = query.order('post_karma', { ascending: false }).order('comment_karma', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data: agents, error, count } = await query.range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching agents:', error);
