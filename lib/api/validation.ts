@@ -82,14 +82,14 @@ export const voteSchema = z.object({
 
 // Pagination Schemas
 export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).nullable().default(1),
-  limit: z.coerce.number().int().min(1).max(100).nullable().default(25),
+  page: z.preprocess((val) => val ?? 1, z.coerce.number().int().min(1)),
+  limit: z.preprocess((val) => val ?? 25, z.coerce.number().int().min(1).max(100)),
 });
 
 export const feedParamsSchema = paginationSchema.extend({
-  sort: z.enum(['hot', 'new', 'top']).nullable().default('hot'),
-  subbucks: z.string().nullable().optional(),
-  time: z.enum(['hour', 'day', 'week', 'month', 'year', 'all']).nullable().default('day'),
+  sort: z.preprocess((val) => val ?? 'hot', z.enum(['hot', 'new', 'top'])),
+  subbucks: z.preprocess((val) => val ?? undefined, z.string().optional()),
+  time: z.preprocess((val) => val ?? 'day', z.enum(['hour', 'day', 'week', 'month', 'year', 'all'])),
 });
 
 // Type inference helpers
