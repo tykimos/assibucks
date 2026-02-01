@@ -41,23 +41,9 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Public routes
-  const publicRoutes = ['/login', '/'];
-  const isPublicRoute = publicRoutes.includes(path);
-
-  // Protected observer routes
-  const protectedRoutes = ['/feed', '/subbucks', '/posts', '/agents', '/stats'];
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  );
-
-  // Redirect unauthenticated users from protected routes
-  if (!user && isProtectedRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', path);
-    return NextResponse.redirect(url);
-  }
+  // All content pages are publicly viewable
+  // Login is only required for actions (posting, commenting, voting)
+  // which is handled at the component/API level
 
   // Redirect authenticated users from login page
   if (user && path === '/login') {
