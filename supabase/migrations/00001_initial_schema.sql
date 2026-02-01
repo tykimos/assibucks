@@ -401,30 +401,54 @@ $$ LANGUAGE plpgsql;
 -- TRIGGERS
 -- ===========================================
 
--- Post vote triggers
-CREATE TRIGGER trigger_update_post_vote_counts
-    AFTER INSERT OR UPDATE OR DELETE ON votes
+-- Post vote triggers (separate for INSERT/UPDATE vs DELETE to avoid NEW reference in DELETE)
+CREATE TRIGGER trigger_update_post_vote_counts_insert_update
+    AFTER INSERT OR UPDATE ON votes
     FOR EACH ROW
-    WHEN (COALESCE(NEW.post_id, OLD.post_id) IS NOT NULL)
+    WHEN (NEW.post_id IS NOT NULL)
     EXECUTE FUNCTION update_post_vote_counts();
 
-CREATE TRIGGER trigger_update_post_scores
-    AFTER INSERT OR UPDATE OR DELETE ON votes
+CREATE TRIGGER trigger_update_post_vote_counts_delete
+    AFTER DELETE ON votes
     FOR EACH ROW
-    WHEN (COALESCE(NEW.post_id, OLD.post_id) IS NOT NULL)
+    WHEN (OLD.post_id IS NOT NULL)
+    EXECUTE FUNCTION update_post_vote_counts();
+
+CREATE TRIGGER trigger_update_post_scores_insert_update
+    AFTER INSERT OR UPDATE ON votes
+    FOR EACH ROW
+    WHEN (NEW.post_id IS NOT NULL)
     EXECUTE FUNCTION update_post_scores();
 
--- Comment vote triggers
-CREATE TRIGGER trigger_update_comment_vote_counts
-    AFTER INSERT OR UPDATE OR DELETE ON votes
+CREATE TRIGGER trigger_update_post_scores_delete
+    AFTER DELETE ON votes
     FOR EACH ROW
-    WHEN (COALESCE(NEW.comment_id, OLD.comment_id) IS NOT NULL)
+    WHEN (OLD.post_id IS NOT NULL)
+    EXECUTE FUNCTION update_post_scores();
+
+-- Comment vote triggers (separate for INSERT/UPDATE vs DELETE)
+CREATE TRIGGER trigger_update_comment_vote_counts_insert_update
+    AFTER INSERT OR UPDATE ON votes
+    FOR EACH ROW
+    WHEN (NEW.comment_id IS NOT NULL)
     EXECUTE FUNCTION update_comment_vote_counts();
 
-CREATE TRIGGER trigger_update_comment_scores
-    AFTER INSERT OR UPDATE OR DELETE ON votes
+CREATE TRIGGER trigger_update_comment_vote_counts_delete
+    AFTER DELETE ON votes
     FOR EACH ROW
-    WHEN (COALESCE(NEW.comment_id, OLD.comment_id) IS NOT NULL)
+    WHEN (OLD.comment_id IS NOT NULL)
+    EXECUTE FUNCTION update_comment_vote_counts();
+
+CREATE TRIGGER trigger_update_comment_scores_insert_update
+    AFTER INSERT OR UPDATE ON votes
+    FOR EACH ROW
+    WHEN (NEW.comment_id IS NOT NULL)
+    EXECUTE FUNCTION update_comment_scores();
+
+CREATE TRIGGER trigger_update_comment_scores_delete
+    AFTER DELETE ON votes
+    FOR EACH ROW
+    WHEN (OLD.comment_id IS NOT NULL)
     EXECUTE FUNCTION update_comment_scores();
 
 -- Karma trigger
