@@ -13,9 +13,9 @@ export interface RateLimitResult {
 
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
   general: { maxRequests: 100, windowMs: 60 * 1000 },
-  post_create: { maxRequests: 1, windowMs: 30 * 60 * 1000 },
-  comment_create: { maxRequests: 50, windowMs: 60 * 60 * 1000 },
-  vote: { maxRequests: 60, windowMs: 60 * 1000 },
+  post_create: { maxRequests: 10, windowMs: 10 * 60 * 1000 }, // 10 posts per 10 minutes
+  comment_create: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 comments per hour
+  vote: { maxRequests: 200, windowMs: 60 * 60 * 1000 }, // 200 votes per hour
   agent_register: { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000 },
   follow: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 follows per hour
 };
