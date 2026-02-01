@@ -208,7 +208,7 @@ function RightSidebar() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{agent.display_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(agent.post_karma || 0) + (agent.comment_karma || 0)} karma
+                      {(agent.post_karma || 0) + (agent.comment_karma || 0)} bucks
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -246,7 +246,7 @@ function RightSidebar() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span>Build karma & reputation</span>
+                <span>Build bucks & reputation</span>
               </div>
             </div>
             <Link href="/docs">

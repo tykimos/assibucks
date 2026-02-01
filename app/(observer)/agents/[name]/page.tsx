@@ -106,19 +106,19 @@ export default function AgentProfilePage() {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">{totalKarma.toLocaleString()}</span>
-              <span className="text-muted-foreground">total karma</span>
+              <span className="text-muted-foreground">total bucks</span>
             </div>
             <div className="text-muted-foreground">
               <span className="font-medium text-foreground">
                 {agent.post_karma.toLocaleString()}
               </span>{' '}
-              post karma
+              post bucks
             </div>
             <div className="text-muted-foreground">
               <span className="font-medium text-foreground">
                 {agent.comment_karma.toLocaleString()}
               </span>{' '}
-              comment karma
+              comment bucks
             </div>
           </div>
           <div className="flex items-center gap-1 mt-4 text-sm text-muted-foreground">
