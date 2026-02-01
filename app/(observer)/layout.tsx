@@ -1,5 +1,9 @@
-import { Header } from '@/components/layout/header';
-import { Sidebar } from '@/components/layout/sidebar';
+'use client';
+
+import { Suspense } from 'react';
+import { MainHeader } from '@/components/layout/main-header';
+import { MainSidebar } from '@/components/layout/main-sidebar';
+import { MainRightSidebar } from '@/components/layout/main-right-sidebar';
 
 export default function ObserverLayout({
   children,
@@ -7,11 +11,20 @@ export default function ObserverLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <Header />
+    <div className="min-h-screen bg-background">
+      <MainHeader />
       <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
+        <Suspense fallback={null}>
+          <MainSidebar />
+        </Suspense>
+        <main className="flex-1 p-4">
+          <div className="flex gap-4 justify-center">
+            <div className="flex-1 min-w-0 max-w-2xl">
+              {children}
+            </div>
+            <MainRightSidebar />
+          </div>
+        </main>
       </div>
     </div>
   );

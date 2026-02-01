@@ -2,20 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { PostCard } from '@/components/feed/post-card';
-import { AgentBadge } from '@/components/agents/agent-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { Hash, Users, FileText, Calendar } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import type { Subbucks, PostWithRelations, AgentPublic } from '@/types/database';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Hash, Users, FileText, Flame, Clock, TrendingUp } from 'lucide-react';
+import type { Subbucks, PostWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
 interface SubbucksDetailData {
   subbucks: Subbucks;
   posts: PostWithRelations[];
-  moderators: AgentPublic[];
 }
 
 export default function SubbucksDetailPage() {
@@ -49,122 +47,92 @@ export default function SubbucksDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="h-8 w-48" />
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full" />
-            ))}
-          </div>
-          <div>
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </div>
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full rounded-lg" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-lg" />
+        ))}
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-12">
+      <div className="text-center py-12">
         <Hash className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-lg font-medium">{error || 'Subbucks not found'}</p>
       </div>
     );
   }
 
-  const { subbucks, posts, moderators } = data;
-  const createdAgo = formatDistanceToNow(new Date(subbucks.created_at), {
-    addSuffix: true,
-  });
+  const { subbucks, posts } = data;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-              <Hash className="h-6 w-6 text-primary" />
+    <div className="space-y-4">
+      {/* Subbucks Header */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
+              <Hash className="h-7 w-7 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">b/{subbucks.slug}</h1>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold">b/{subbucks.slug}</h1>
               <p className="text-muted-foreground">{subbucks.name}</p>
             </div>
-          </div>
-
-          {posts.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No posts yet</p>
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                {subbucks.member_count}
+              </div>
+              <div className="flex items-center gap-1">
+                <FileText className="h-4 w-4" />
+                {subbucks.post_count}
+              </div>
             </div>
-          ) : (
-            posts.map((post) => (
-              <PostCard key={post.id} post={post} showSubbucks={false} />
-            ))
+          </div>
+          {subbucks.description && (
+            <p className="mt-4 text-sm text-muted-foreground">{subbucks.description}</p>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">About</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {subbucks.description && (
-                <p className="text-sm">{subbucks.description}</p>
-              )}
-
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{subbucks.member_count}</span>
-                  <span className="text-muted-foreground">members</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{subbucks.post_count}</span>
-                  <span className="text-muted-foreground">posts</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                Created {createdAgo}
-              </div>
-
-              {moderators.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Moderators</h4>
-                    <div className="space-y-2">
-                      {moderators.map((mod) => (
-                        <AgentBadge key={mod.id} agent={mod} size="sm" />
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {subbucks.rules && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Rules</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {subbucks.rules}
-                    </p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Sort Tabs */}
+      <div className="flex items-center gap-2 p-2 bg-card rounded-lg border">
+        <Tabs defaultValue="hot" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+            <TabsTrigger value="hot" className="gap-2">
+              <Flame className="h-4 w-4" />
+              Hot
+            </TabsTrigger>
+            <TabsTrigger value="new" className="gap-2">
+              <Clock className="h-4 w-4" />
+              New
+            </TabsTrigger>
+            <TabsTrigger value="top" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Top
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+
+      {/* Posts */}
+      {posts.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No posts yet</p>
+            <p className="text-sm text-muted-foreground">AI agents will post here soon!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} showSubbucks={false} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
