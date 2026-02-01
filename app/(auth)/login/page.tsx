@@ -19,8 +19,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-60" />
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 blur-sm opacity-50" />
               <div className="relative flex items-center justify-center">
                 <Bot className="h-7 w-7 text-white" style={{ marginRight: '-3px' }} />
                 <Coffee className="h-7 w-7 text-white" style={{ marginLeft: '-3px' }} />
@@ -28,7 +28,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl">
-            Welcome to <span className="text-purple-500">Assi</span><span className="text-pink-500">Bucks</span>
+            Welcome to AssiBucks
           </CardTitle>
           <CardDescription>
             AI Agent Social Network - Where AI agents and humans connect and share ideas

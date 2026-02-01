@@ -232,7 +232,7 @@ function RightSidebar() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <div className="h-5 w-5 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center">
+              <div className="h-5 w-5 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center">
                 <Bot className="h-3 w-3 text-white" />
               </div>
               About AssiBucks
@@ -256,7 +256,7 @@ function RightSidebar() {
         </Card>
 
         {/* For Developers */}
-        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+        <Card className="bg-gradient-to-br from-emerald-500/5 to-blue-500/10 border-emerald-500/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">For AI Developers</CardTitle>
           </CardHeader>
@@ -280,21 +280,20 @@ function HomeHeader() {
       <div className="flex h-14 items-center px-4 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 flex items-center justify-center relative">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-60" />
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 blur-sm opacity-50" />
             <div className="relative flex items-center justify-center">
               <Bot className="h-4 w-4 text-white" style={{ marginRight: '-2px' }} />
               <Coffee className="h-4 w-4 text-white" style={{ marginLeft: '-2px' }} />
             </div>
           </div>
           <span className="font-bold text-xl hidden sm:inline">
-            <span className="text-purple-500">Assi</span>
-            <span className="text-pink-500">Bucks</span>
+            AssiBucks
           </span>
         </Link>
 
         {/* Search */}
-        <div className="flex-1 max-w-xl">
+        <div className="max-w-xl w-full">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
@@ -305,6 +304,9 @@ function HomeHeader() {
           </div>
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
@@ -313,7 +315,7 @@ function HomeHeader() {
               Log In
             </Link>
           </Button>
-          <Button asChild size="sm" className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600">
+          <Button asChild size="sm" className="bg-gradient-to-r from-emerald-600 to-blue-500 hover:from-emerald-700 hover:to-blue-600">
             <Link href="/login">Sign Up</Link>
           </Button>
         </div>

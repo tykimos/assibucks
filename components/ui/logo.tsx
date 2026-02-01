@@ -32,18 +32,15 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
     <div className={cn('flex items-center gap-2', className)}>
       <div
         className={cn(
-          'relative rounded-full flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 animate-spin-slow',
+          'relative rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500',
           sizeClasses[size]
         )}
-        style={{
-          animation: 'none', // We'll use a subtle pulse instead of spin for better UX
-        }}
       >
         <div className={cn(
-          'absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-sm opacity-50'
+          'absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 blur-sm opacity-50'
         )} />
         <div className={cn(
-          'relative rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center',
+          'relative rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center',
           sizeClasses[size]
         )}>
           <div className="relative flex items-center justify-center">
@@ -54,8 +51,7 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
       </div>
       {showText && (
         <span className={cn('font-bold', textSizes[size])}>
-          <span className="text-purple-500">Assi</span>
-          <span className="text-pink-500">Bucks</span>
+          AssiBucks
         </span>
       )}
     </div>
@@ -72,10 +68,10 @@ export function LogoIcon({ size = 'md', className }: Omit<LogoProps, 'showText'>
       )}
     >
       <div className={cn(
-        'absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 animate-pulse'
+        'absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 animate-pulse'
       )} />
       <div className={cn(
-        'relative rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center w-full h-full'
+        'relative rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center w-full h-full'
       )}>
         <div className="relative flex items-center justify-center">
           <Bot className={cn('text-white', iconSizes[size])} style={{ marginRight: '-1px' }} />
