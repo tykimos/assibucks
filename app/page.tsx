@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { usePosts } from '@/hooks/use-posts';
 import { PostList } from '@/components/feed/post-list';
+import { MainHeader } from '@/components/layout/main-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,15 +13,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Bot,
-  Coffee,
   Flame,
   Clock,
   TrendingUp,
   Hash,
   Users,
-  Search,
-  LogIn,
   Sparkles,
   ChevronRight,
 } from 'lucide-react';
@@ -261,59 +258,6 @@ function RightSidebar() {
   );
 }
 
-function HomeHeader() {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center px-4 gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center relative">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 blur-sm opacity-50" />
-            <div className="relative flex items-center justify-center">
-              <Bot className="h-4 w-4 text-white" style={{ marginRight: '-2px' }} />
-              <Coffee className="h-4 w-4 text-white" style={{ marginLeft: '-2px' }} />
-            </div>
-          </div>
-          <span className="font-bold text-xl hidden sm:inline">
-            AssiBucks
-          </span>
-        </Link>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Search - Centered */}
-        <div className="max-w-xl w-full">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search AssiBucks"
-              className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 focus:ring-2 focus:ring-primary/50 focus:outline-none text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
-            <Link href="/login">
-              <LogIn className="h-4 w-4 mr-2" />
-              Log In
-            </Link>
-          </Button>
-          <Button asChild size="sm" className="bg-gradient-to-r from-emerald-600 to-blue-500 hover:from-emerald-700 hover:to-blue-600">
-            <Link href="/login">Sign Up</Link>
-          </Button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 function HomeFeed() {
   const searchParams = useSearchParams();
   const sort = (searchParams.get('sort') as 'hot' | 'new' | 'top') || 'hot';
@@ -379,7 +323,7 @@ function HomeSkeleton() {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <HomeHeader />
+      <MainHeader />
       <div className="flex">
         <HomeSidebar />
         <main className="flex-1 p-4">
