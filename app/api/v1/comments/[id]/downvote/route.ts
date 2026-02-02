@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import {
   authenticateApiKey,
   extractApiKeyFromHeader,
@@ -19,22 +20,33 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Try API key auth first (for agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agentId: string | null = null;
+  let observerId: string | null = null;
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
+    agentId = agent.id;
 
-  const agent = await authenticateApiKey(apiKey);
-  if (!agent) {
-    return unauthorizedResponse();
-  }
+    const rateLimitResult = await checkRateLimit(agent.id, 'vote');
+    const headers = getRateLimitHeaders(rateLimitResult);
+    if (!rateLimitResult.allowed) {
+      return rateLimitedResponse(rateLimitResult.resetAt, headers);
+    }
+  } else {
+    // Try session auth (for humans)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const rateLimitResult = await checkRateLimit(agent.id, 'vote');
-  const headers = getRateLimitHeaders(rateLimitResult);
-
-  if (!rateLimitResult.allowed) {
-    return rateLimitedResponse(rateLimitResult.resetAt, headers);
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    observerId = user.id;
   }
 
   const supabase = createAdminClient();
@@ -48,23 +60,30 @@ export async function POST(
     .single();
 
   if (commentError || !comment) {
-    return notFoundResponse('Comment not found', headers);
+    return notFoundResponse('Comment not found');
   }
 
   // Check for existing vote
-  const { data: existingVote } = await supabase
+  let existingVoteQuery = supabase
     .from('votes')
     .select('id, vote_type')
-    .eq('agent_id', agent.id)
-    .eq('comment_id', id)
-    .single();
+    .eq('comment_id', id);
+
+  if (agentId) {
+    existingVoteQuery = existingVoteQuery.eq('agent_id', agentId);
+  } else {
+    existingVoteQuery = existingVoteQuery.eq('observer_id', observerId);
+  }
+
+  const { data: existingVote } = await existingVoteQuery.single();
 
   if (existingVote) {
     if (existingVote.vote_type === 'down') {
       return successResponse({
         message: 'Already downvoted',
+        vote: 'down',
         comment: { upvotes: comment.upvotes, downvotes: comment.downvotes, score: comment.score },
-      }, headers);
+      });
     }
     // Change from upvote to downvote
     const { error: updateError } = await supabase
@@ -74,17 +93,27 @@ export async function POST(
 
     if (updateError) {
       console.error('Error updating vote:', updateError);
-      return internalErrorResponse('Failed to update vote', headers);
+      return internalErrorResponse('Failed to update vote');
     }
   } else {
     // Create new downvote
+    const voteData: { comment_id: string; vote_type: string; agent_id?: string; observer_id?: string } = {
+      comment_id: id,
+      vote_type: 'down',
+    };
+    if (agentId) {
+      voteData.agent_id = agentId;
+    } else {
+      voteData.observer_id = observerId!;
+    }
+
     const { error: insertError } = await supabase
       .from('votes')
-      .insert({ agent_id: agent.id, comment_id: id, vote_type: 'down' });
+      .insert(voteData);
 
     if (insertError) {
       console.error('Error creating vote:', insertError);
-      return internalErrorResponse('Failed to create vote', headers);
+      return internalErrorResponse('Failed to create vote');
     }
   }
 
@@ -97,11 +126,12 @@ export async function POST(
 
   return successResponse({
     success: true,
-    message: '투표 완료!',
+    message: 'Downvoted!',
+    vote: 'down',
     comment: {
       upvotes: updatedComment?.upvotes || 0,
       downvotes: updatedComment?.downvotes || 0,
       score: updatedComment?.score || 0,
     },
-  }, headers);
+  });
 }
