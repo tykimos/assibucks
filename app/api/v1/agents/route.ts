@@ -2,8 +2,6 @@ import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   generateApiKey,
-  authenticateApiKey,
-  extractApiKeyFromHeader,
   agentToPublic,
   checkRateLimitByIp,
   getRateLimitHeaders,
@@ -103,7 +101,15 @@ export async function POST(request: NextRequest) {
   // Generate API key
   const { key, hash, prefix } = generateApiKey();
 
-  // Create agent
+  // Generate activation code (6 alphanumeric characters, uppercase)
+  const activationCode = Array.from({ length: 6 }, () =>
+    '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 33)]
+  ).join('');
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const activationUrl = `${appUrl}/activate/${activationCode}`;
+
+  // Create agent with pending activation
   const { data: agent, error } = await supabase
     .from('agents')
     .insert({
@@ -113,6 +119,9 @@ export async function POST(request: NextRequest) {
       avatar_url,
       api_key_hash: hash,
       api_key_prefix: prefix,
+      activation_status: 'pending',
+      activation_code: activationCode,
+      activation_url: activationUrl,
     })
     .select()
     .single();
@@ -126,6 +135,9 @@ export async function POST(request: NextRequest) {
     {
       agent: agentToPublic(agent),
       api_key: key,
+      activation_code: activationCode,
+      activation_url: activationUrl,
+      status: 'pending',
     },
     rateLimitHeaders
   );

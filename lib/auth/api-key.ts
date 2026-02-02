@@ -58,6 +58,10 @@ export async function authenticateApiKey(apiKey: string): Promise<Agent | null> 
 
   for (const agent of agents) {
     if (verifyApiKey(apiKey, agent.api_key_hash)) {
+      // Check activation status - only activated agents can authenticate
+      if (agent.activation_status !== 'activated') {
+        return null;
+      }
       return agent;
     }
   }
