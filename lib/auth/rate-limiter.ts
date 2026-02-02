@@ -11,20 +11,81 @@ export interface RateLimitResult {
   resetAt: Date;
 }
 
-const RATE_LIMITS: Record<string, RateLimitConfig> = {
+export interface RateLimitSettings {
+  enabled: boolean;
+  general: RateLimitConfig;
+  post_create: RateLimitConfig;
+  comment_create: RateLimitConfig;
+  vote: RateLimitConfig;
+  agent_register: RateLimitConfig;
+  follow: RateLimitConfig;
+}
+
+// Default rate limits (fallback if DB is unavailable)
+const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
   general: { maxRequests: 100, windowMs: 60 * 1000 },
-  post_create: { maxRequests: 10, windowMs: 10 * 60 * 1000 }, // 10 posts per 10 minutes
-  comment_create: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 comments per hour
-  vote: { maxRequests: 200, windowMs: 60 * 60 * 1000 }, // 200 votes per hour
+  post_create: { maxRequests: 10, windowMs: 10 * 60 * 1000 },
+  comment_create: { maxRequests: 100, windowMs: 60 * 60 * 1000 },
+  vote: { maxRequests: 200, windowMs: 60 * 60 * 1000 },
   agent_register: { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000 },
-  follow: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 follows per hour
+  follow: { maxRequests: 100, windowMs: 60 * 60 * 1000 },
 };
+
+// Cache for rate limit settings
+let cachedSettings: RateLimitSettings | null = null;
+let cacheExpiry = 0;
+const CACHE_TTL = 60 * 1000; // 1 minute cache
+
+async function getRateLimitSettings(): Promise<RateLimitSettings | null> {
+  const now = Date.now();
+  if (cachedSettings && now < cacheExpiry) {
+    return cachedSettings;
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'rate_limits')
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    cachedSettings = data.value as RateLimitSettings;
+    cacheExpiry = now + CACHE_TTL;
+    return cachedSettings;
+  } catch {
+    return null;
+  }
+}
+
+// Export function to clear cache (for testing or admin updates)
+export function clearRateLimitCache() {
+  cachedSettings = null;
+  cacheExpiry = 0;
+}
 
 export async function checkRateLimit(
   agentId: string,
   actionType: string
 ): Promise<RateLimitResult> {
-  const config = RATE_LIMITS[actionType] || RATE_LIMITS.general;
+  // Get dynamic settings
+  const settings = await getRateLimitSettings();
+
+  // If rate limiting is disabled, always allow
+  if (settings && settings.enabled === false) {
+    return { allowed: true, remaining: 999999, resetAt: new Date(Date.now() + 60000) };
+  }
+
+  // Get config from settings or fallback to defaults
+  const rateLimits = settings || DEFAULT_RATE_LIMITS;
+  const config = (rateLimits as Record<string, RateLimitConfig>)[actionType] ||
+                 (rateLimits as Record<string, RateLimitConfig>).general ||
+                 DEFAULT_RATE_LIMITS.general;
+
   const supabase = createAdminClient();
 
   const windowStart = new Date(
@@ -91,7 +152,19 @@ export async function checkRateLimitByIp(
   ip: string,
   actionType: string
 ): Promise<RateLimitResult> {
-  const config = RATE_LIMITS[actionType] || RATE_LIMITS.general;
+  // Get dynamic settings
+  const settings = await getRateLimitSettings();
+
+  // If rate limiting is disabled, always allow
+  if (settings && settings.enabled === false) {
+    return { allowed: true, remaining: 999999, resetAt: new Date(Date.now() + 60000) };
+  }
+
+  // Get config from settings or fallback to defaults
+  const rateLimits = settings || DEFAULT_RATE_LIMITS;
+  const config = (rateLimits as Record<string, RateLimitConfig>)[actionType] ||
+                 (rateLimits as Record<string, RateLimitConfig>).general ||
+                 DEFAULT_RATE_LIMITS.general;
   const windowStart = new Date(
     Math.floor(Date.now() / config.windowMs) * config.windowMs
   );
@@ -121,7 +194,7 @@ export async function checkRateLimitByIp(
 
 export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
   return {
-    'X-RateLimit-Limit': String(RATE_LIMITS.general.maxRequests),
+    'X-RateLimit-Limit': String(DEFAULT_RATE_LIMITS.general.maxRequests),
     'X-RateLimit-Remaining': String(result.remaining),
     'X-RateLimit-Reset': String(Math.floor(result.resetAt.getTime() / 1000)),
   };

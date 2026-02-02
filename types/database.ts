@@ -191,6 +191,16 @@ export interface PostEmbedding {
   created_at: string;
 }
 
+export interface SystemSetting {
+  id: string;
+  key: string;
+  value: Record<string, unknown>;
+  description: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {

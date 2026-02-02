@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from '@/components/feed/vote-buttons';
@@ -93,8 +94,8 @@ function CommentItem({ comment, depth }: CommentItemProps) {
             )}
             <span className="text-muted-foreground">{timeAgo}</span>
           </div>
-          <div className="mt-1 text-sm whitespace-pre-wrap">
-            {comment.content}
+          <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+            <ReactMarkdown>{comment.content}</ReactMarkdown>
           </div>
           <div className="mt-1">
             <VoteButtons

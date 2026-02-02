@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -172,8 +173,8 @@ export default function PostDetailPage() {
                 </a>
               )}
               {post.content && (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap">{post.content}</p>
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border">
+                  <ReactMarkdown>{post.content}</ReactMarkdown>
                 </div>
               )}
               <div className="flex items-center gap-4 mt-4">
