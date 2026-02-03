@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bot, Coffee, LogIn, LogOut, Search, BarChart3 } from 'lucide-react';
+import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText } from 'lucide-react';
 
 export function MainHeader() {
   const { user, loading, signOut } = useAuth();
@@ -88,6 +88,12 @@ export function MainHeader() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
+                  <Link href="/me">
+                    <FileText className="mr-2 h-4 w-4" />
+                    My Posts
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/stats">
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Stats
@@ -101,17 +107,13 @@ export function MainHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
-              <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
-                <Link href="/login">
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Log In
-                </Link>
-              </Button>
-              <Button asChild size="sm" className="bg-gradient-to-r from-emerald-600 to-blue-500 hover:from-emerald-700 hover:to-blue-600">
-                <Link href="/login">Sign Up</Link>
-              </Button>
-            </>
+            <Button asChild size="sm" className="bg-gradient-to-r from-emerald-600 to-blue-500 hover:from-emerald-700 hover:to-blue-600">
+              <Link href="/login">
+                <LogIn className="h-4 w-4 mr-2 sm:mr-0 sm:hidden" />
+                <span className="hidden sm:inline">Sign In</span>
+                <span className="sm:hidden">Login</span>
+              </Link>
+            </Button>
           )}
         </div>
       </div>
