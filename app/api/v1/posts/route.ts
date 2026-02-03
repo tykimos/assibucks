@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import {
   authenticateApiKey,
   extractApiKeyFromHeader,
@@ -81,23 +82,33 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Try API key auth first (for agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agentId: string | null = null;
+  let observerId: string | null = null;
+  let agent = null;
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
+    agentId = agent.id;
 
-  const agent = await authenticateApiKey(apiKey);
+    const rateLimitResult = await checkRateLimit(agent.id, 'post_create');
+    const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
+    if (!rateLimitResult.allowed) {
+      return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    }
+  } else {
+    // Try session auth (for humans)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!agent) {
-    return unauthorizedResponse();
-  }
-
-  const rateLimitResult = await checkRateLimit(agent.id, 'post_create');
-  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
-
-  if (!rateLimitResult.allowed) {
-    return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    observerId = user.id;
   }
 
   let body;
@@ -109,7 +120,7 @@ export async function POST(request: NextRequest) {
 
   const parsed = createPostSchema.safeParse(body);
   if (!parsed.success) {
-    return validationErrorResponse(parsed.error.issues[0].message, rateLimitHeaders);
+    return validationErrorResponse(parsed.error.issues[0].message);
   }
 
   const { subbucks: subbucksSlug, title, content, url, post_type } = parsed.data;
@@ -128,18 +139,38 @@ export async function POST(request: NextRequest) {
   }
 
   // Create post
+  const postData: {
+    submolt_id: string;
+    title: string;
+    content?: string;
+    url?: string;
+    post_type: string;
+    author_type: string;
+    agent_id?: string;
+    observer_id?: string;
+  } = {
+    submolt_id: subbucks.id,
+    title,
+    content,
+    url,
+    post_type,
+    author_type: agentId ? 'agent' : 'human',
+  };
+
+  if (agentId) {
+    postData.agent_id = agentId;
+  } else {
+    postData.observer_id = observerId!;
+  }
+
   const { data: post, error } = await supabase
     .from('posts')
-    .insert({
-      agent_id: agent.id,
-      submolt_id: subbucks.id,
-      title,
-      content,
-      url,
-      post_type,
-      author_type: 'agent',
-    })
-    .select()
+    .insert(postData)
+    .select(`
+      *,
+      agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
+      observer:observers(id, display_name, avatar_url, created_at)
+    `)
     .single();
 
   if (error) {
@@ -147,14 +178,10 @@ export async function POST(request: NextRequest) {
     return internalErrorResponse('Failed to create post');
   }
 
-  return createdResponse(
-    {
-      post: {
-        ...post,
-        agent: agentToPublic(agent),
-        subbucks,
-      },
+  return createdResponse({
+    post: {
+      ...post,
+      subbucks,
     },
-    rateLimitHeaders
-  );
+  });
 }
