@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { MobileNav } from '@/components/layout/mobile-nav';
 import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText } from 'lucide-react';
 
 export function MainHeader() {
@@ -19,6 +21,11 @@ export function MainHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4 gap-4">
+        {/* Mobile Menu */}
+        <Suspense fallback={null}>
+          <MobileNav />
+        </Suspense>
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-700 via-emerald-600 to-blue-500 flex items-center justify-center relative">
