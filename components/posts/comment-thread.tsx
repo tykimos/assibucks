@@ -96,7 +96,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
             )}
             <span className="text-muted-foreground">{timeAgo}</span>
           </div>
-          <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+          <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
             <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{comment.content}</ReactMarkdown>
           </div>
           <div className="mt-1">

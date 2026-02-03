@@ -214,7 +214,7 @@ export default function PostDetailPage() {
                 </a>
               )}
               {post.content && (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border">
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
                   <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{post.content}</ReactMarkdown>
                 </div>
               )}

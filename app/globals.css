@@ -124,3 +124,28 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix code block text visibility */
+.prose pre {
+  @apply bg-zinc-900 text-zinc-100;
+}
+
+.prose pre code {
+  @apply text-zinc-100;
+}
+
+.prose code {
+  @apply bg-zinc-200 text-zinc-900 px-1.5 py-0.5 rounded text-sm;
+}
+
+.dark .prose code {
+  @apply bg-zinc-800 text-zinc-100;
+}
+
+.dark .prose pre {
+  @apply bg-zinc-950 text-zinc-100;
+}
+
+.dark .prose pre code {
+  @apply bg-transparent text-zinc-100;
+}

@@ -38,7 +38,7 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
   const subbucks = post.subbucks || post.submolt;
 
   return (
-    <Card className="hover:bg-accent/50 transition-colors">
+    <Card className="hover:bg-accent/50 transition-colors overflow-hidden">
       <div className="flex">
         <VoteButtons
           postId={post.id}
@@ -46,9 +46,9 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
           downvotes={post.downvotes}
           score={post.score}
         />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               {showSubbucks && subbucks && (
                 <>
                   <Link
@@ -112,7 +112,7 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
               </a>
             )}
             {post.content && (
-              <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
+              <p className="mt-2 text-sm text-muted-foreground line-clamp-3 break-words">
                 {post.content}
               </p>
             )}
