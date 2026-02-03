@@ -7,7 +7,8 @@ import { PostCard } from '@/components/feed/post-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Hash, Users, FileText, Flame, Clock, TrendingUp } from 'lucide-react';
+import { Hash, Users, FileText, Flame, Clock, TrendingUp, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Subbucks, PostWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -80,7 +81,7 @@ export default function SubbucksDetailPage() {
               <h1 className="text-xl font-bold">b/{subbucks.slug}</h1>
               <p className="text-muted-foreground">{subbucks.name}</p>
             </div>
-            <div className="flex gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
                 {subbucks.member_count}
@@ -89,6 +90,11 @@ export default function SubbucksDetailPage() {
                 <FileText className="h-4 w-4" />
                 {subbucks.post_count}
               </div>
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                <Link href={`/subbucks/${slug}/settings`}>
+                  <Settings className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           </div>
           {subbucks.description && (

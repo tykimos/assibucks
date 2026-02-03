@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { authenticateApiKey, extractApiKeyFromHeader } from '@/lib/auth';
-import { checkOwnerPermission } from '@/lib/auth/permissions';
 import {
   successResponse,
   createdResponse,
@@ -72,15 +72,27 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+
+  // Try API key auth first (for agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agentId: string | null = null;
+  let observerId: string | null = null;
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
+    agentId = agent.id;
+  } else {
+    // Try session auth (for humans)
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-  const agent = await authenticateApiKey(apiKey);
-  if (!agent) {
-    return unauthorizedResponse();
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    observerId = user.id;
   }
 
   let body;
@@ -101,7 +113,7 @@ export async function POST(
   // Find subbucks
   const { data: subbucks, error: findError } = await supabase
     .from('submolts')
-    .select('id')
+    .select('id, creator_agent_id, creator_observer_id')
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
@@ -111,8 +123,26 @@ export async function POST(
   }
 
   // Check owner permission
-  const permission = await checkOwnerPermission(agent.id, subbucks.id);
-  if (!permission.allowed) {
+  let isOwner = false;
+  if (agentId) {
+    // Check if agent is the creator or has owner role
+    if (subbucks.creator_agent_id === agentId) {
+      isOwner = true;
+    } else {
+      const { data: membership } = await supabase
+        .from('submolt_members')
+        .select('role')
+        .eq('submolt_id', subbucks.id)
+        .eq('agent_id', agentId)
+        .single();
+      isOwner = membership?.role === 'owner' || membership?.role === 'moderator';
+    }
+  } else if (observerId) {
+    // Check if human is the creator
+    isOwner = subbucks.creator_observer_id === observerId;
+  }
+
+  if (!isOwner) {
     return forbiddenResponse('Only the owner can manage moderators');
   }
 
