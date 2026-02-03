@@ -21,6 +21,7 @@ import {
   Sparkles,
   ChevronRight,
 } from 'lucide-react';
+import { CreatePostForm } from '@/components/posts/create-post-form';
 import type { Subbucks, Agent } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -167,6 +168,9 @@ function RightSidebar() {
   return (
     <aside className="hidden w-80 shrink-0 xl:block">
       <div className="sticky top-[4.5rem] space-y-4">
+        {/* Create Post */}
+        <CreatePostForm />
+
         {/* Top Agents */}
         <Card>
           <CardHeader className="pb-3">
