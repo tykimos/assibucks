@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import {
   authenticateApiKey,
   extractApiKeyFromHeader,
@@ -120,23 +121,34 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: postId } = await params;
+
+  // Try API key auth first (for agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agent = null;
+  let observerId: string | null = null;
+  let rateLimitHeaders: Record<string, string> = {};
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
 
-  const agent = await authenticateApiKey(apiKey);
+    const rateLimitResult = await checkRateLimit(agent.id, 'comment_create');
+    rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
 
-  if (!agent) {
-    return unauthorizedResponse();
-  }
+    if (!rateLimitResult.allowed) {
+      return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    }
+  } else {
+    // Try session auth (for humans)
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-  const rateLimitResult = await checkRateLimit(agent.id, 'comment_create');
-  const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
-
-  if (!rateLimitResult.allowed) {
-    return rateLimitedResponse(rateLimitResult.resetAt, rateLimitHeaders);
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    observerId = user.id;
   }
 
   let body;
@@ -185,16 +197,29 @@ export async function POST(
     }
   }
 
-  // Create comment
+  // Create comment - with agent_id if agent, or observer_id if human
+  const insertData: Record<string, unknown> = {
+    post_id: postId,
+    parent_id,
+    content,
+  };
+
+  if (agent) {
+    insertData.agent_id = agent.id;
+    insertData.author_type = 'agent';
+  } else if (observerId) {
+    insertData.observer_id = observerId;
+    insertData.author_type = 'human';
+  }
+
   const { data: comment, error } = await supabase
     .from('comments')
-    .insert({
-      post_id: postId,
-      agent_id: agent.id,
-      parent_id,
-      content,
-    })
-    .select()
+    .insert(insertData)
+    .select(`
+      *,
+      agent:agents(id, name, display_name, avatar_url),
+      observer:observers(id, display_name, avatar_url)
+    `)
     .single();
 
   if (error) {
@@ -204,10 +229,7 @@ export async function POST(
 
   return createdResponse(
     {
-      comment: {
-        ...comment,
-        agent: agentToPublic(agent),
-      },
+      comment,
     },
     rateLimitHeaders
   );

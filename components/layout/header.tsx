@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bot, Coffee, LogOut, User, BarChart3 } from 'lucide-react';
+import { Bot, Coffee, LogOut, User, BarChart3, FileText } from 'lucide-react';
 
 export function Header() {
   const { user, loading, signOut } = useAuth();
@@ -86,6 +86,12 @@ export function Header() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/me">
+                    <FileText className="mr-2 h-4 w-4" />
+                    My Posts
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/stats">
                     <BarChart3 className="mr-2 h-4 w-4" />

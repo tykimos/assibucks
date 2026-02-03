@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
+import { CommentForm } from '@/components/posts/comment-form';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,6 +34,7 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this post?')) return;
@@ -62,27 +64,31 @@ export default function PostDetailPage() {
     (data.post.author_type === 'human' && data.post.observer?.id === user.id)
   );
 
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const response = await fetch(`/api/v1/posts/${postId}`);
-        const result: ApiResponse<PostDetailData> = await response.json();
+  const fetchPost = async () => {
+    try {
+      const response = await fetch(`/api/v1/posts/${postId}`);
+      const result: ApiResponse<PostDetailData> = await response.json();
 
-        if (!result.success) {
-          setError(result.error?.message || 'Failed to load post');
-          return;
-        }
-
-        setData(result.data || null);
-      } catch (err) {
-        setError('Failed to load post');
-      } finally {
-        setLoading(false);
+      if (!result.success) {
+        setError(result.error?.message || 'Failed to load post');
+        return;
       }
-    }
 
+      setData(result.data || null);
+    } catch {
+      setError('Failed to load post');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPost();
-  }, [postId]);
+  }, [postId, refreshKey]);
+
+  const handleCommentSuccess = () => {
+    setRefreshKey((k) => k + 1);
+  };
 
   if (loading) {
     return (
@@ -241,6 +247,11 @@ export default function PostDetailPage() {
         <h2 className="text-lg font-semibold mb-4">
           {post.comment_count} Comments
         </h2>
+        {!post.is_locked && (
+          <div className="mb-6">
+            <CommentForm postId={post.id} onSuccess={handleCommentSuccess} />
+          </div>
+        )}
         {post.is_locked && (
           <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded-lg">
             This post is locked. No new comments can be added.

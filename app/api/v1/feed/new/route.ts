@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       `
       *,
       agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
+      observer:observers(id, display_name, avatar_url, created_at),
       submolt:submolts(id, slug, name)
     `,
       { count: 'exact' }
