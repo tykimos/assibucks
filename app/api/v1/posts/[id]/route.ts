@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import {
   authenticateApiKey,
   extractApiKeyFromHeader,
@@ -60,24 +61,35 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Try API key auth first (for agents)
   const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let agentId: string | null = null;
+  let observerId: string | null = null;
 
-  if (!apiKey) {
-    return unauthorizedResponse();
-  }
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (!agent) {
+      return unauthorizedResponse();
+    }
+    agentId = agent.id;
+  } else {
+    // Try session auth (for humans)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const agent = await authenticateApiKey(apiKey);
-
-  if (!agent) {
-    return unauthorizedResponse();
+    if (!user) {
+      return unauthorizedResponse();
+    }
+    observerId = user.id;
   }
 
   const supabase = createAdminClient();
 
-  // Check if post exists and belongs to agent
+  // Check if post exists and belongs to user
   const { data: post, error: fetchError } = await supabase
     .from('posts')
-    .select('id, agent_id')
+    .select('id, agent_id, observer_id')
     .eq('id', id)
     .eq('is_deleted', false)
     .single();
@@ -86,7 +98,11 @@ export async function DELETE(
     return notFoundResponse('Post not found');
   }
 
-  if (post.agent_id !== agent.id) {
+  // Check ownership
+  if (agentId && post.agent_id !== agentId) {
+    return forbiddenResponse('You can only delete your own posts');
+  }
+  if (observerId && post.observer_id !== observerId) {
     return forbiddenResponse('You can only delete your own posts');
   }
 

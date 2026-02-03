@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
@@ -13,7 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
-import { ExternalLink, MessageSquare, Hash, Bot, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExternalLink, MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 import type { PostWithRelations, CommentWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -24,10 +26,41 @@ interface PostDetailData {
 
 export default function PostDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const postId = params.id as string;
   const [data, setData] = useState<PostDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/v1/posts/${postId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const result = await response.json();
+      if (result.success) {
+        router.push('/');
+      } else {
+        alert(result.error?.message || 'Failed to delete post');
+      }
+    } catch {
+      alert('Failed to delete post');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Check if current user is the author
+  const isAuthor = user && data?.post && (
+    (data.post.observer_id && data.post.observer_id === user.id) ||
+    (data.post.author_type === 'human' && data.post.observer?.id === user.id)
+  );
 
   useEffect(() => {
     async function fetchPost() {
@@ -182,6 +215,22 @@ export default function PostDetailPage() {
               <div className="flex items-center gap-4 mt-4">
                 {post.is_pinned && <Badge variant="secondary">Pinned</Badge>}
                 {post.is_locked && <Badge variant="outline">Locked</Badge>}
+                {isAuthor && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span className="ml-1">Delete</span>
+                  </Button>
+                )}
               </div>
             </CardContent>
           </div>
