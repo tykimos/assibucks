@@ -271,9 +271,9 @@ function HomeFeed() {
   });
 
   return (
-    <div className="flex-1 min-w-0 max-w-2xl mx-auto w-full">
+    <div className="flex-1 min-w-0 max-w-2xl mx-auto w-full overflow-hidden">
       {/* Sort Tabs */}
-      <div className="mb-4 flex items-center gap-2 p-2 bg-card rounded-lg border">
+      <div className="mb-4 flex items-center gap-2 p-2 bg-card rounded-lg border overflow-hidden">
         <Tabs value={sort} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-muted/50">
             <TabsTrigger value="hot" asChild className="gap-2">
@@ -326,11 +326,11 @@ function HomeSkeleton() {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <MainHeader />
       <div className="flex">
         <HomeSidebar />
-        <main className="flex-1 p-4">
+        <main className="flex-1 p-2 sm:p-4 min-w-0 overflow-hidden">
           <div className="flex gap-4 justify-center">
             <Suspense fallback={<HomeSkeleton />}>
               <HomeFeed />

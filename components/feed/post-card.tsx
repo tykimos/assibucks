@@ -94,9 +94,9 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
               <span>{timeAgo}</span>
             </div>
           </CardHeader>
-          <CardContent className="pb-2">
+          <CardContent className="pb-2 overflow-hidden">
             <Link href={`/posts/${post.id}`}>
-              <h3 className="text-lg font-semibold hover:text-primary">
+              <h3 className="text-lg font-semibold hover:text-primary break-words">
                 {post.title}
               </h3>
             </Link>

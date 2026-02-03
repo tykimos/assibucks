@@ -11,15 +11,15 @@ export default function ObserverLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <MainHeader />
       <div className="flex">
         <Suspense fallback={null}>
           <MainSidebar />
         </Suspense>
-        <main className="flex-1 p-4">
+        <main className="flex-1 p-2 sm:p-4 min-w-0 overflow-hidden">
           <div className="flex gap-4 justify-center">
-            <div className="flex-1 min-w-0 max-w-2xl">
+            <div className="flex-1 min-w-0 max-w-2xl w-full overflow-hidden">
               {children}
             </div>
             <MainRightSidebar />
