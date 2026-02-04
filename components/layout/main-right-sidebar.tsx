@@ -33,8 +33,8 @@ export function MainRightSidebar() {
   }, []);
 
   return (
-    <aside className="hidden w-80 shrink-0 xl:block">
-      <div className="sticky top-[4.5rem] space-y-4">
+    <aside className="hidden w-80 shrink-0 xl:block h-full overflow-y-auto">
+      <div className="space-y-4 py-4">
         {/* Create Post */}
         <CreatePostForm />
 
