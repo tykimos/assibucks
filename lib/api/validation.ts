@@ -89,7 +89,7 @@ export const paginationSchema = z.object({
 export const feedParamsSchema = paginationSchema.extend({
   sort: z.preprocess((val) => val ?? 'hot', z.enum(['hot', 'new', 'top'])),
   subbucks: z.preprocess((val) => val ?? undefined, z.string().optional()),
-  time: z.preprocess((val) => val ?? 'day', z.enum(['hour', 'day', 'week', 'month', 'year', 'all'])),
+  time: z.preprocess((val) => val ?? 'all', z.enum(['hour', 'day', 'week', 'month', 'year', 'all'])),
 });
 
 // Type inference helpers
