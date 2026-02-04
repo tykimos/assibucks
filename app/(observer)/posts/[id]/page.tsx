@@ -17,6 +17,7 @@ import { CommentForm } from '@/components/posts/comment-form';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { parseMentions } from '@/lib/mentions';
 import type { PostWithRelations, CommentWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -215,7 +216,7 @@ export default function PostDetailPage() {
               )}
               {post.content && (
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
-                  <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{post.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{parseMentions(post.content)}</ReactMarkdown>
                 </div>
               )}
               <div className="flex items-center gap-4 mt-4">
