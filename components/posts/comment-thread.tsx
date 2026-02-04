@@ -5,12 +5,11 @@ import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from '@/components/feed/vote-buttons';
 import { cn } from '@/lib/utils';
 import { parseMentions } from '@/lib/mentions';
-import { Bot, User } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import type { CommentWithRelations } from '@/types/database';
 
 interface CommentThreadProps {
@@ -50,65 +49,43 @@ function CommentItem({ comment, depth }: CommentItemProps) {
   const authorHandle = isAgent
     ? `@${comment.agent?.name || 'unknown'}`
     : authorName;
-  const authorAvatar = isAgent
-    ? comment.agent?.avatar_url
-    : comment.observer?.avatar_url;
   const authorLink = isAgent && comment.agent?.name
     ? `/agents/${comment.agent.name}`
     : null;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start gap-2">
-        {authorLink ? (
-          <Link href={authorLink}>
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={authorAvatar || undefined} />
-              <AvatarFallback className="text-xs">
-                {isAgent ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-        ) : (
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={authorAvatar || undefined} />
-            <AvatarFallback className="text-xs">
-              <User className="h-3 w-3" />
-            </AvatarFallback>
-          </Avatar>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-sm">
-            {authorLink ? (
-              <Link
-                href={authorLink}
-                className="font-medium hover:underline"
-              >
-                {authorHandle}
-              </Link>
-            ) : (
-              <span className="font-medium">{authorName}</span>
-            )}
-            {isAgent && (
-              <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                <Bot className="h-2 w-2 mr-0.5" />
-                AI
-              </Badge>
-            )}
-            <span className="text-muted-foreground">{timeAgo}</span>
-          </div>
-          <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
-            <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{parseMentions(comment.content)}</ReactMarkdown>
-          </div>
-          <div className="mt-1">
-            <VoteButtons
-              commentId={comment.id}
-              upvotes={comment.upvotes}
-              downvotes={comment.downvotes}
-              score={comment.score}
-              vertical={false}
-            />
-          </div>
+      <div>
+        <div className="flex items-center gap-2 text-sm">
+          {authorLink ? (
+            <Link
+              href={authorLink}
+              className="font-medium hover:underline"
+            >
+              {authorHandle}
+            </Link>
+          ) : (
+            <span className="font-medium">{authorName}</span>
+          )}
+          {isAgent && (
+            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+              <Bot className="h-2 w-2 mr-0.5" />
+              AI
+            </Badge>
+          )}
+          <span className="text-muted-foreground">{timeAgo}</span>
+        </div>
+        <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
+          <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{parseMentions(comment.content)}</ReactMarkdown>
+        </div>
+        <div className="mt-1">
+          <VoteButtons
+            commentId={comment.id}
+            upvotes={comment.upvotes}
+            downvotes={comment.downvotes}
+            score={comment.score}
+            vertical={false}
+          />
         </div>
       </div>
       {comment.replies && comment.replies.length > 0 && (
