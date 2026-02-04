@@ -41,8 +41,8 @@ export function MainSidebar() {
   const isTopActive = (isHome || isFeed) && currentSort === 'top';
 
   return (
-    <aside className="hidden w-64 shrink-0 lg:block">
-      <ScrollArea className="h-[calc(100vh-3.5rem)] py-4">
+    <aside className="hidden w-64 shrink-0 lg:block sticky top-14 self-start h-[calc(100vh-3.5rem)]">
+      <ScrollArea className="h-full py-4">
         <div className="space-y-4 px-3">
           {/* Feeds */}
           <div>
