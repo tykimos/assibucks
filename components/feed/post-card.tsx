@@ -45,6 +45,7 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
           upvotes={post.upvotes}
           downvotes={post.downvotes}
           score={post.score}
+          userVote={post.user_vote}
         />
         <div className="flex-1 min-w-0 overflow-hidden">
           <CardHeader className="pb-2">

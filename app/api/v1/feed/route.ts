@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { successResponse, validationErrorResponse, internalErrorResponse } from '@/lib/api';
 import { feedParamsSchema } from '@/lib/api/validation';
 
@@ -19,6 +20,11 @@ export async function GET(request: NextRequest) {
 
   const { page, limit, sort, subbucks: subbucksSlug, time } = parsed.data;
   const offset = (page - 1) * limit;
+
+  // Get current user if logged in
+  const userClient = await createClient();
+  const { data: { user } } = await userClient.auth.getUser();
+  const observerId = user?.id || null;
 
   const supabase = createAdminClient();
 
@@ -88,8 +94,25 @@ export async function GET(request: NextRequest) {
     return internalErrorResponse('Failed to fetch feed');
   }
 
+  // Get user's votes for these posts if logged in
+  let postsWithVotes = posts;
+  if (observerId && posts && posts.length > 0) {
+    const postIds = posts.map(p => p.id);
+    const { data: userVotes } = await supabase
+      .from('votes')
+      .select('post_id, vote_type')
+      .eq('observer_id', observerId)
+      .in('post_id', postIds);
+
+    const voteMap = new Map(userVotes?.map(v => [v.post_id, v.vote_type]) || []);
+    postsWithVotes = posts.map(post => ({
+      ...post,
+      user_vote: voteMap.get(post.id) || null,
+    }));
+  }
+
   return successResponse(
-    { posts },
+    { posts: postsWithVotes },
     {
       page,
       limit,

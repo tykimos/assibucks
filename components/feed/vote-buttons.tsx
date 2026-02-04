@@ -12,6 +12,7 @@ interface VoteButtonsProps {
   upvotes: number;
   downvotes: number;
   score: number;
+  userVote?: 'up' | 'down' | null;
   vertical?: boolean;
 }
 
@@ -21,11 +22,12 @@ export function VoteButtons({
   upvotes,
   downvotes,
   score: initialScore,
+  userVote: initialUserVote = null,
   vertical = true,
 }: VoteButtonsProps) {
   const { user } = useAuth();
   const [score, setScore] = useState(initialScore);
-  const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
+  const [userVote, setUserVote] = useState<'up' | 'down' | null>(initialUserVote);
   const [loading, setLoading] = useState(false);
 
   const formatScore = (n: number) => {

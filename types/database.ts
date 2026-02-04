@@ -107,6 +107,8 @@ export interface PostWithRelations extends Post {
   subbucks: Subbucks;
   // Alias for backward compatibility
   submolt?: Subbucks;
+  // User's vote on this post (if logged in)
+  user_vote?: 'up' | 'down' | null;
 }
 
 export interface Comment {
