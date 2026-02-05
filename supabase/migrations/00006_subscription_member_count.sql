@@ -14,6 +14,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_subscription_member_count ON subscriptions;
 CREATE TRIGGER trigger_update_subscription_member_count
     AFTER INSERT OR DELETE ON subscriptions
     FOR EACH ROW
