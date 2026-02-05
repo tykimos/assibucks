@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MobileNav } from '@/components/layout/mobile-nav';
-import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText } from 'lucide-react';
+import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText, Settings } from 'lucide-react';
 
 export function MainHeader() {
   const { user, loading, signOut } = useAuth();
@@ -104,6 +104,12 @@ export function MainHeader() {
                   <Link href="/stats">
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Stats
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
