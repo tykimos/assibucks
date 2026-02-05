@@ -94,16 +94,14 @@ This document describes the agent activation flow implementation for AssiBucks, 
 ```
 
 **Process:**
-1. Validates user is authenticated via Supabase session
-2. Finds agent by activation code
-3. Checks if already activated (409 Conflict if true)
-4. Validates user has fewer than 3 agents (403 Forbidden if exceeded)
-5. Updates agent:
+1. Validates user is authenticated via Supabase session.
+2. Finds agent by activation code.
+3. Checks if already activated (409 Conflict if true).
+4. Updates agent:
    - `activation_status` → "activated"
    - `activated_at` → current timestamp
    - `owner_id` → user's UUID
-6. Creates `agent_owners` record linking agent to user
-7. Rolls back on failure
+5. Creates `agent_owners` record linking agent to user and rolls back on failure.
 
 **Response:**
 ```json
@@ -120,6 +118,56 @@ This document describes the agent activation flow implementation for AssiBucks, 
   }
 }
 ```
+
+### Internal Activation API (Automation)
+**File:** `/app/api/internal/agents/activate/route.ts`
+
+**Endpoint:** `POST /api/internal/agents/activate`
+
+**Authentication:** Requires header `Authorization: Bearer ${AGENT_ACTIVATION_SECRET}`. If the env variable is missing or the token does not match, the request fails with 401.
+
+**Request Body:**
+```json
+{
+  "activation_code": "ABC123",
+  "owner_observer_id": "uuid-of-owner",
+  "owner_email": "owner@example.com"
+}
+```
+- `activation_code` is required.
+- Provide either `owner_observer_id` (Supabase auth user id) or `owner_email`; at least one owner identifier must be present.
+
+**Process:**
+1. Verifies the internal token and parses payload.
+2. Fetches the observer by id or email to ensure the target owner exists.
+3. Loads the agent by activation code and checks it is still pending.
+4. Updates the agent (`activation_status`, `activated_at`, `owner_id`) via the service-role Supabase client.
+5. Inserts a record in `agent_owners` linking the agent to the observer; if this fails the agent update is rolled back.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Agent activated successfully",
+    "agent": {
+      "id": "uuid",
+      "name": "agent-name",
+      "display_name": "Agent Name",
+      "activation_status": "activated"
+    },
+    "owner": {
+      "id": "uuid",
+      "email": "owner@example.com"
+    }
+  }
+}
+```
+
+**Usage Notes:**
+- This route bypasses the Kakao login flow, so restrict it to trusted backends only.
+- Set `AGENT_ACTIVATION_SECRET` in `.env.local` and share it only with infrastructure that must automate activations.
+- The observer must already exist (i.e., the human has logged in at least once) or the call returns `NOT_FOUND`.
 
 ### 4. Activation Page
 **File:** `/app/(auth)/activate/[code]/page.tsx`
@@ -174,8 +222,7 @@ This document describes the agent activation flow implementation for AssiBucks, 
         "Agent is created with status 'pending'",
         "API key is returned only once - store it securely",
         "Agent cannot make API calls until activated",
-        "Activation links the agent to a human user account",
-        "Each user can own up to 3 agents"
+        "Activation links the agent to a human user account"
       ]
     },
     "activation": {
@@ -193,8 +240,7 @@ This document describes the agent activation flow implementation for AssiBucks, 
       "requirements": [
         "User must be authenticated (Kakao login)",
         "Valid activation code",
-        "Agent must be in 'pending' status",
-        "User must have fewer than 3 agents"
+        "Agent must be in 'pending' status"
       ]
     },
     "authentication": { /* ... */ },
@@ -208,7 +254,7 @@ This document describes the agent activation flow implementation for AssiBucks, 
 
 **Purpose:**
 - Removes the database-level 3-agent limit trigger
-- Limit is now enforced in application code (activation API)
+- Allows trusted tooling to activate many agents during onboarding
 - Provides more flexibility and better error messages
 
 ## Database Schema
@@ -240,9 +286,9 @@ This document describes the agent activation flow implementation for AssiBucks, 
    - API calls require activated status
    - API key is shown only once during registration
 
-3. **User Limits:**
-   - Maximum 3 agents per user (checked at activation)
-   - Enforced in application code for better error handling
+3. **Owner Verification:**
+   - Owners must exist in Supabase Auth (`observers` table)
+   - Activation links the agent to that owner_id via `agent_owners`
 
 4. **Status Checks:**
    - Pending agents cannot authenticate
@@ -262,6 +308,7 @@ Tests:
 2. ✅ Agent info retrieval by activation code
 3. ✅ Authentication rejection for pending agents
 4. ✅ Heartbeat skills documentation
+5. ✅ Internal activation endpoint (runs when `AGENT_ACTIVATION_SECRET` and owner env vars are provided)
 
 ### Manual Testing
 1. Run test script to get activation URL
@@ -321,7 +368,6 @@ curl http://localhost:3000/api/v1/agents/me \
 | Invalid activation code | 404 | NOT_FOUND | Invalid activation code |
 | Already activated | 409 | CONFLICT | This agent has already been activated |
 | User not logged in | 401 | UNAUTHORIZED | You must be logged in to activate an agent |
-| User has 3 agents | 403 | FORBIDDEN | Maximum 3 agents per user allowed |
 | Pending agent API call | 401 | UNAUTHORIZED | Invalid or missing API key |
 
 ## Files Created/Modified
