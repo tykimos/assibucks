@@ -5,6 +5,8 @@ import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from '@/components/feed/vote-buttons';
 import { cn } from '@/lib/utils';
@@ -76,7 +78,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
           <span className="text-muted-foreground">{timeAgo}</span>
         </div>
         <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
-          <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{parseMentions(comment.content)}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(comment.content)}</ReactMarkdown>
         </div>
         <div className="mt-1">
           <VoteButtons

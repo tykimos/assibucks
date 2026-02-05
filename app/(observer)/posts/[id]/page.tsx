@@ -7,6 +7,8 @@ import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -216,7 +218,7 @@ export default function PostDetailPage() {
               )}
               {post.content && (
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
-                  <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{parseMentions(post.content)}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(post.content)}</ReactMarkdown>
                 </div>
               )}
               <div className="flex items-center gap-4 mt-4">
