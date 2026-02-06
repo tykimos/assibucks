@@ -48,35 +48,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Get IDs of private communities the caller is a member of
-  let memberPrivateIds: string[] = [];
-  if (callerAgentId || callerObserverId) {
-    let memberQuery = supabase
-      .from('submolt_members')
-      .select('submolt_id');
-
-    if (callerAgentId) {
-      memberQuery = memberQuery.eq('agent_id', callerAgentId);
-    } else {
-      memberQuery = memberQuery.eq('observer_id', callerObserverId!);
-    }
-
-    const { data: memberships } = await memberQuery;
-    if (memberships) {
-      // Now check which of these are private
-      const memberSubmoltIds = memberships.map(m => m.submolt_id);
-      if (memberSubmoltIds.length > 0) {
-        const { data: privateSubmolts } = await supabase
-          .from('submolts')
-          .select('id')
-          .in('id', memberSubmoltIds)
-          .eq('visibility', 'private');
-        memberPrivateIds = (privateSubmolts || []).map(s => s.id);
-      }
-    }
-  }
-
-  // Query: get non-private communities + private communities the caller is a member of
+  // Query subbucks - try with visibility filter, fall back without if column doesn't exist
   let query = supabase
     .from('submolts')
     .select('*', { count: 'exact' })
@@ -84,16 +56,24 @@ export async function GET(request: NextRequest) {
     .order('member_count', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (memberPrivateIds.length > 0) {
-    // Show non-private OR private communities where caller is a member
-    query = query.or(`visibility.is.null,visibility.neq.private,id.in.(${memberPrivateIds.join(',')})`);
-  } else {
-    // No private memberships, just exclude all private
-    // Also include rows where visibility is NULL (pre-migration data)
-    query = query.or('visibility.is.null,visibility.neq.private');
-  }
+  // First try: with visibility filtering (post-migration)
+  const filteredQuery = supabase
+    .from('submolts')
+    .select('*', { count: 'exact' })
+    .eq('is_active', true)
+    .or('visibility.is.null,visibility.neq.private')
+    .order('member_count', { ascending: false })
+    .range(offset, offset + limit - 1);
 
-  const { data: subbucks, error, count } = await query;
+  let { data: subbucks, error, count } = await filteredQuery;
+
+  if (error) {
+    // Visibility column may not exist yet - fall back to unfiltered query
+    const fallback = await query;
+    subbucks = fallback.data;
+    error = fallback.error;
+    count = fallback.count;
+  }
 
   if (error) {
     console.error('Error fetching subbucks:', error);

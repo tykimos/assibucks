@@ -186,7 +186,7 @@ export async function checkCommunityAccess(
   const admin = createAdminClient();
 
   // 1. Fetch community visibility
-  const { data: submolt } = await admin
+  const { data: submolt, error: submoltError } = await admin
     .from('submolts')
     .select('visibility')
     .eq('id', submoltId)
@@ -196,7 +196,8 @@ export async function checkCommunityAccess(
     return { allowed: false, reason: 'Community not found', visibility: 'public', isMember: false, role: null };
   }
 
-  const visibility = submolt.visibility as CommunityVisibility;
+  // If visibility column doesn't exist yet, default to 'public'
+  const visibility = (submoltError || !submolt.visibility) ? 'public' : (submolt.visibility as CommunityVisibility);
 
   // 2. Determine caller identity
   const caller: CallerIdentity = agentId

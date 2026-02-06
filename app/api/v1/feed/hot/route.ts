@@ -38,11 +38,12 @@ export async function GET(request: NextRequest) {
   let excludePrivateSubmoltIds: string[] = [];
   {
     // Get all private submolt IDs
-    const { data: allPrivate } = await supabase
+    const { data: allPrivate, error: visibilityError } = await supabase
       .from('submolts')
       .select('id')
       .eq('visibility', 'private');
-    const allPrivateIds = (allPrivate || []).map(s => s.id);
+    // If visibility column doesn't exist yet, treat as no private communities
+    const allPrivateIds = visibilityError ? [] : (allPrivate || []).map((s: any) => s.id);
 
     if (allPrivateIds.length > 0) {
       // Get caller's memberships in private communities

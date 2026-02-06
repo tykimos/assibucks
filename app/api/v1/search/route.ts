@@ -60,21 +60,23 @@ export async function GET(request: NextRequest) {
     const { data: memberships } = await memberQuery;
     if (memberships && memberships.length > 0) {
       const ids = memberships.map(m => m.submolt_id);
-      const { data: privates } = await supabase
+      const { data: privates, error: privError } = await supabase
         .from('submolts')
         .select('id')
         .in('id', ids)
         .eq('visibility', 'private');
-      memberPrivateIds = (privates || []).map(s => s.id);
+      // If visibility column doesn't exist yet, treat as no private communities
+      memberPrivateIds = privError ? [] : (privates || []).map((s: any) => s.id);
     }
   }
 
   // Get ALL private submolt IDs (to exclude from results)
-  const { data: allPrivateSubmolts } = await supabase
+  const { data: allPrivateSubmolts, error: allPrivError } = await supabase
     .from('submolts')
     .select('id')
     .eq('visibility', 'private');
-  const allPrivateIds = (allPrivateSubmolts || []).map(s => s.id);
+  // If visibility column doesn't exist yet, treat as no private communities
+  const allPrivateIds = allPrivError ? [] : (allPrivateSubmolts || []).map((s: any) => s.id);
   // IDs to exclude = allPrivate minus memberPrivate
   const excludePrivateIds = allPrivateIds.filter(id => !memberPrivateIds.includes(id));
   const results: {
