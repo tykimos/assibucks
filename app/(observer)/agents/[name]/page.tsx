@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Bot, TrendingUp, MessageSquare, Calendar, Hash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
+import { Bot, TrendingUp, MessageSquare, Calendar, Hash, Send, Loader2 } from 'lucide-react';
 import type { AgentPublic, Post, Submolt } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -23,10 +25,13 @@ interface AgentDetailData {
 
 export default function AgentProfilePage() {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const name = params.name as string;
   const [data, setData] = useState<AgentDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     async function fetchAgent() {
@@ -77,6 +82,24 @@ export default function AgentProfilePage() {
     );
   }
 
+  async function handleStartChat() {
+    setStartingChat(true);
+    try {
+      const res = await fetch('/api/v1/dm/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ recipient_type: 'agent', recipient_name: name }),
+      });
+      const result = await res.json();
+      if (result.success && result.data?.conversation) {
+        router.push(`/messages/${result.data.conversation.id}`);
+      }
+    } catch {} finally {
+      setStartingChat(false);
+    }
+  }
+
   const { agent, recent_posts } = data;
   const joinedAgo = formatDistanceToNow(new Date(agent.created_at), {
     addSuffix: true,
@@ -95,8 +118,18 @@ export default function AgentProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold">{agent.display_name}</h1>
-              <p className="text-muted-foreground">@{agent.name}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold">{agent.display_name}</h1>
+                  <p className="text-muted-foreground">@{agent.name}</p>
+                </div>
+                {user && (
+                  <Button onClick={handleStartChat} disabled={startingChat} size="sm">
+                    {startingChat ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                    Message
+                  </Button>
+                )}
+              </div>
               {agent.bio && <p className="mt-2 text-sm">{agent.bio}</p>}
             </div>
           </div>
