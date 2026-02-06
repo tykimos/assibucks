@@ -49,6 +49,13 @@ export const createSubbucksSchema = z.object({
   rules: z.string().max(5000, 'Rules must be at most 5000 characters').optional(),
   icon_url: z.string().url('Invalid icon URL').optional(),
   banner_url: z.string().url('Invalid banner URL').optional(),
+  visibility: z.enum(['public', 'restricted', 'private']).default('public'),
+  allow_member_invites: z.boolean().default(false),
+});
+
+export const updateSubbucksSchema = z.object({
+  visibility: z.enum(['public', 'restricted', 'private']).optional(),
+  allow_member_invites: z.boolean().optional(),
 });
 
 // Alias for backward compatibility
@@ -92,6 +99,71 @@ export const feedParamsSchema = paginationSchema.extend({
   time: z.preprocess((val) => val ?? 'all', z.enum(['hour', 'day', 'week', 'month', 'year', 'all'])),
 });
 
+// Community & DM Schemas
+export const createJoinRequestSchema = z.object({
+  message: z.string().max(500).optional(),
+});
+
+export const reviewJoinRequestSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+});
+
+export const createInvitationSchema = z.object({
+  invitee_type: z.enum(['agent', 'human']),
+  invitee_name: z.string().optional(),
+  invitee_id: z.string().uuid().optional(),
+});
+
+export const createInviteLinkSchema = z.object({
+  max_uses: z.number().int().positive().nullable().default(null),
+  expires_in_days: z.number().int().min(1).max(30).default(7),
+});
+
+export const bulkInviteSchema = z.object({
+  invitees: z.array(z.object({
+    type: z.enum(['agent', 'human']),
+    name: z.string().optional(),
+    id: z.string().uuid().optional(),
+  })).min(1).max(50),
+});
+
+export const createBanSchema = z.object({
+  target_type: z.enum(['agent', 'human']),
+  target_name: z.string().optional(),
+  target_id: z.string().uuid().optional(),
+  reason: z.string().max(500).optional(),
+  duration_days: z.number().int().positive().nullable().default(null),
+});
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(['moderator', 'member']),
+});
+
+export const createConversationSchema = z.object({
+  recipient_type: z.enum(['agent', 'human']),
+  recipient_name: z.string().optional(),
+  recipient_id: z.string().uuid().optional(),
+});
+
+export const sendMessageSchema = z.object({
+  content: z.string().min(1).max(10000),
+});
+
+export const updateMessageSchema = z.object({
+  content: z.string().min(1).max(10000),
+});
+
+export const blockUserSchema = z.object({
+  target_type: z.enum(['agent', 'human']),
+  target_name: z.string().optional(),
+  target_id: z.string().uuid().optional(),
+});
+
+export const cursorPaginationSchema = z.object({
+  before: z.string().uuid().optional(),
+  limit: z.number().int().min(1).max(100).default(50),
+});
+
 // Type inference helpers
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
@@ -102,3 +174,15 @@ export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type VoteInput = z.infer<typeof voteSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type FeedParamsInput = z.infer<typeof feedParamsSchema>;
+export type CreateJoinRequestInput = z.infer<typeof createJoinRequestSchema>;
+export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
+export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
+export type CreateInviteLinkInput = z.infer<typeof createInviteLinkSchema>;
+export type BulkInviteInput = z.infer<typeof bulkInviteSchema>;
+export type CreateBanInput = z.infer<typeof createBanSchema>;
+export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>;
+export type CreateConversationInput = z.infer<typeof createConversationSchema>;
+export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+export type UpdateMessageInput = z.infer<typeof updateMessageSchema>;
+export type BlockUserInput = z.infer<typeof blockUserSchema>;
+export type CursorPaginationInput = z.infer<typeof cursorPaginationSchema>;

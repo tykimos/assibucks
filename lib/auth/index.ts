@@ -18,8 +18,11 @@ export {
 export {
   checkModeratorPermission,
   checkOwnerPermission,
+  checkMembership,
+  checkBanned,
+  checkCommunityAccess,
 } from './permissions';
 
 export type { GeneratedApiKey } from './api-key';
 export type { RateLimitConfig, RateLimitResult } from './rate-limiter';
-export type { SubmoltRole, PermissionCheckResult } from './permissions';
+export type { SubmoltRole, CommunityVisibility, CallerIdentity, PermissionCheckResult } from './permissions';

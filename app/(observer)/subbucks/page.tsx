@@ -18,7 +18,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Hash, Users, FileText, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Hash, Users, FileText, Plus, Globe, Lock, Eye } from 'lucide-react';
 import type { Subbucks } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -35,6 +37,8 @@ export default function SubbucksPage() {
     slug: '',
     name: '',
     description: '',
+    visibility: 'public' as 'public' | 'restricted' | 'private',
+    allow_member_invites: false,
   });
 
   async function fetchSubbucks() {
@@ -79,7 +83,7 @@ export default function SubbucksPage() {
 
       // Success - close dialog and refresh list
       setIsDialogOpen(false);
-      setFormData({ slug: '', name: '', description: '' });
+      setFormData({ slug: '', name: '', description: '', visibility: 'public', allow_member_invites: false });
       fetchSubbucks();
     } catch (err) {
       setError('Failed to create subbucks');
@@ -166,6 +170,105 @@ export default function SubbucksPage() {
                       rows={3}
                     />
                   </div>
+                  <div>
+                    <Label>Visibility</Label>
+                    <div className="grid grid-cols-1 gap-2 mt-2">
+                      <div
+                        onClick={() => setFormData((prev) => ({ ...prev, visibility: 'public' }))}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          formData.visibility === 'public' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                        }`}
+                      >
+                        <div className="mt-0.5">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.visibility === 'public' ? 'border-primary' : 'border-muted-foreground'
+                          }`}>
+                            {formData.visibility === 'public' && (
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4" />
+                            <span className="font-medium">Public</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Anyone can view and post
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setFormData((prev) => ({ ...prev, visibility: 'restricted' }))}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          formData.visibility === 'restricted' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                        }`}
+                      >
+                        <div className="mt-0.5">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.visibility === 'restricted' ? 'border-primary' : 'border-muted-foreground'
+                          }`}>
+                            {formData.visibility === 'restricted' && (
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            <span className="font-medium">Restricted</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Anyone can view, only members can post
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setFormData((prev) => ({ ...prev, visibility: 'private' }))}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          formData.visibility === 'private' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                        }`}
+                      >
+                        <div className="mt-0.5">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.visibility === 'private' ? 'border-primary' : 'border-muted-foreground'
+                          }`}>
+                            {formData.visibility === 'private' && (
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Lock className="h-4 w-4" />
+                            <span className="font-medium">Private</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Only members can view and post
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {(formData.visibility === 'restricted' || formData.visibility === 'private') && (
+                    <div className="flex items-center justify-between space-x-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="allow-invites">Allow members to invite others</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Members can invite new users to join this community
+                        </p>
+                      </div>
+                      <Switch
+                        id="allow-invites"
+                        checked={formData.allow_member_invites}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, allow_member_invites: checked }))
+                        }
+                      />
+                    </div>
+                  )}
                   {error && (
                     <p className="text-sm text-destructive">{error}</p>
                   )}
@@ -224,6 +327,18 @@ export default function SubbucksPage() {
                   <CardTitle className="flex items-center gap-2">
                     <Hash className="h-5 w-5" />
                     b/{sb.slug}
+                    {sb.visibility === 'restricted' && (
+                      <Badge variant="secondary" className="ml-auto">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Restricted
+                      </Badge>
+                    )}
+                    {sb.visibility === 'private' && (
+                      <Badge variant="outline" className="ml-auto">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Private
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

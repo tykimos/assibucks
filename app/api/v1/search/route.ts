@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { authenticateApiKey, extractApiKeyFromHeader } from '@/lib/auth';
 import { successResponse, validationErrorResponse, internalErrorResponse } from '@/lib/api';
 import { z } from 'zod';
 
@@ -29,6 +31,52 @@ export async function GET(request: NextRequest) {
   const searchPattern = `%${q}%`;
 
   const supabase = createAdminClient();
+
+  // Resolve caller identity (API key first, then session auth)
+  const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let callerAgentId: string | null = null;
+  let callerObserverId: string | null = null;
+
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (agent) callerAgentId = agent.id;
+  } else {
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) callerObserverId = user.id;
+  }
+
+  // Get private submolt IDs the caller is a member of
+  let memberPrivateIds: string[] = [];
+  if (callerAgentId || callerObserverId) {
+    let memberQuery = supabase
+      .from('submolt_members')
+      .select('submolt_id');
+    if (callerAgentId) {
+      memberQuery = memberQuery.eq('agent_id', callerAgentId);
+    } else {
+      memberQuery = memberQuery.eq('observer_id', callerObserverId!);
+    }
+    const { data: memberships } = await memberQuery;
+    if (memberships && memberships.length > 0) {
+      const ids = memberships.map(m => m.submolt_id);
+      const { data: privates } = await supabase
+        .from('submolts')
+        .select('id')
+        .in('id', ids)
+        .eq('visibility', 'private');
+      memberPrivateIds = (privates || []).map(s => s.id);
+    }
+  }
+
+  // Get ALL private submolt IDs (to exclude from results)
+  const { data: allPrivateSubmolts } = await supabase
+    .from('submolts')
+    .select('id')
+    .eq('visibility', 'private');
+  const allPrivateIds = (allPrivateSubmolts || []).map(s => s.id);
+  // IDs to exclude = allPrivate minus memberPrivate
+  const excludePrivateIds = allPrivateIds.filter(id => !memberPrivateIds.includes(id));
   const results: {
     posts?: unknown[];
     agents?: unknown[];
@@ -39,7 +87,7 @@ export async function GET(request: NextRequest) {
 
   // Search posts
   if (type === 'posts' || type === 'all') {
-    const { data: posts, error: postsError, count } = await supabase
+    let postsQuery = supabase
       .from('posts')
       .select(
         `
@@ -53,6 +101,13 @@ export async function GET(request: NextRequest) {
       .or(`title.ilike.${searchPattern},content.ilike.${searchPattern}`)
       .order('score', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // Filter out posts from private communities the caller can't access
+    if (excludePrivateIds.length > 0) {
+      postsQuery = postsQuery.not('submolt_id', 'in', `(${excludePrivateIds.join(',')})`);
+    }
+
+    const { data: posts, error: postsError, count } = await postsQuery;
 
     if (postsError) {
       console.error('Error searching posts:', postsError);
@@ -82,12 +137,19 @@ export async function GET(request: NextRequest) {
 
   // Search subbucks
   if (type === 'subbucks' || type === 'all') {
-    const { data: subbucks, error: subbucksError, count } = await supabase
+    let subbucksQuery = supabase
       .from('submolts')
       .select('id, slug, name, description, icon_url, member_count, post_count, created_at', { count: 'exact' })
       .or(`slug.ilike.${searchPattern},name.ilike.${searchPattern},description.ilike.${searchPattern}`)
       .order('member_count', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // Filter out private communities the caller can't access
+    if (excludePrivateIds.length > 0) {
+      subbucksQuery = subbucksQuery.not('id', 'in', `(${excludePrivateIds.join(',')})`);
+    }
+
+    const { data: subbucks, error: subbucksError, count } = await subbucksQuery;
 
     if (subbucksError) {
       console.error('Error searching subbucks:', subbucksError);

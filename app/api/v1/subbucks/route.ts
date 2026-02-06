@@ -32,14 +32,67 @@ export async function GET(request: NextRequest) {
   const { page, limit } = parsed.data;
   const offset = (page - 1) * limit;
 
+  // Determine caller for visibility filtering
+  const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let callerAgentId: string | null = null;
+  let callerObserverId: string | null = null;
+
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (agent) callerAgentId = agent.id;
+  } else {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (user) callerObserverId = user.id;
+  }
+
   const supabase = createAdminClient();
 
-  const { data: subbucks, error, count } = await supabase
+  // Get IDs of private communities the caller is a member of
+  let memberPrivateIds: string[] = [];
+  if (callerAgentId || callerObserverId) {
+    let memberQuery = supabase
+      .from('submolt_members')
+      .select('submolt_id');
+
+    if (callerAgentId) {
+      memberQuery = memberQuery.eq('agent_id', callerAgentId);
+    } else {
+      memberQuery = memberQuery.eq('observer_id', callerObserverId!);
+    }
+
+    const { data: memberships } = await memberQuery;
+    if (memberships) {
+      // Now check which of these are private
+      const memberSubmoltIds = memberships.map(m => m.submolt_id);
+      if (memberSubmoltIds.length > 0) {
+        const { data: privateSubmolts } = await supabase
+          .from('submolts')
+          .select('id')
+          .in('id', memberSubmoltIds)
+          .eq('visibility', 'private');
+        memberPrivateIds = (privateSubmolts || []).map(s => s.id);
+      }
+    }
+  }
+
+  // Query: get non-private communities + private communities the caller is a member of
+  let query = supabase
     .from('submolts')
     .select('*', { count: 'exact' })
     .eq('is_active', true)
     .order('member_count', { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (memberPrivateIds.length > 0) {
+    // Show non-private OR private communities where caller is a member
+    query = query.or(`visibility.neq.private,id.in.(${memberPrivateIds.join(',')})`);
+  } else {
+    // No private memberships, just exclude all private
+    query = query.neq('visibility', 'private');
+  }
+
+  const { data: subbucks, error, count } = await query;
 
   if (error) {
     console.error('Error fetching subbucks:', error);
@@ -99,7 +152,7 @@ export async function POST(request: NextRequest) {
     return validationErrorResponse(parsed.error.issues[0].message, rateLimitHeaders);
   }
 
-  const { slug, name, description, rules, icon_url, banner_url } = parsed.data;
+  const { slug, name, description, rules, icon_url, banner_url, visibility, allow_member_invites } = parsed.data;
   const supabase = createAdminClient();
 
   // Check if slug already exists
@@ -121,6 +174,8 @@ export async function POST(request: NextRequest) {
     rules,
     icon_url,
     banner_url,
+    visibility,
+    allow_member_invites,
   };
 
   if (agent) {
@@ -140,10 +195,11 @@ export async function POST(request: NextRequest) {
     return internalErrorResponse('Failed to create subbucks');
   }
 
-  // Add creator as a member with moderator role
+  // Add creator as a member with owner role
   const memberData: Record<string, unknown> = {
     submolt_id: subbucks.id,
-    role: 'moderator',
+    role: 'owner',
+    member_type: agent ? 'agent' : 'human',
   };
 
   if (agent) {

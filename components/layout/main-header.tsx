@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,40 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MobileNav } from '@/components/layout/mobile-nav';
-import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText, Settings } from 'lucide-react';
+import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText, Settings, MessageSquare, Mail } from 'lucide-react';
+
+function DmBadge() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const response = await fetch('/api/v1/dm/unread-count', { credentials: 'include' });
+        const result = await response.json();
+        if (result.success && result.data) {
+          setUnreadCount(result.data.total_unread || 0);
+        }
+      } catch {}
+    }
+    fetchUnread();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Button asChild variant="ghost" size="icon" className="relative h-8 w-8">
+      <Link href="/messages">
+        <MessageSquare className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 h-4 min-w-[16px] rounded-full bg-destructive text-[10px] font-medium text-white flex items-center justify-center px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </Link>
+    </Button>
+  );
+}
 
 export function MainHeader() {
   const { user, loading, signOut } = useAuth();
@@ -63,8 +96,10 @@ export function MainHeader() {
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <>
+              <DmBadge />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   className="relative h-8 w-8 rounded-full"
@@ -101,6 +136,12 @@ export function MainHeader() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/me/invitations">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Invitations
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/stats">
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Stats
@@ -118,7 +159,8 @@ export function MainHeader() {
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </>
           ) : (
             <Button asChild size="sm" className="bg-gradient-to-r from-emerald-600 to-blue-500 hover:from-emerald-700 hover:to-blue-600">
               <Link href="/login">

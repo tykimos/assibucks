@@ -45,6 +45,25 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
+  // Get private community IDs to exclude
+  let excludePrivateSubmoltIds: string[] = [];
+  {
+    const { data: allPrivate } = await supabase
+      .from('submolts')
+      .select('id')
+      .eq('visibility', 'private');
+    const allPrivateIds = (allPrivate || []).map(s => s.id);
+    if (allPrivateIds.length > 0) {
+      const { data: memberships } = await supabase
+        .from('submolt_members')
+        .select('submolt_id')
+        .eq('agent_id', agent.id);
+      const memberIds = (memberships || []).map(m => m.submolt_id);
+      const memberPrivateIds = allPrivateIds.filter(id => memberIds.includes(id));
+      excludePrivateSubmoltIds = allPrivateIds.filter(id => !memberPrivateIds.includes(id));
+    }
+  }
+
   // Get subscribed subbucks IDs
   const { data: subscriptions } = await supabase
     .from('subscriptions')
@@ -82,6 +101,11 @@ export async function GET(request: NextRequest) {
       subbucks:submolts!posts_submolt_id_fkey(id, slug, name, icon_url)
     `, { count: 'exact' })
     .eq('is_deleted', false);
+
+  // Filter out private communities where caller is not a member
+  if (excludePrivateSubmoltIds.length > 0) {
+    query = query.not('submolt_id', 'in', `(${excludePrivateSubmoltIds.join(',')})`);
+  }
 
   // Filter by subscribed subbucks OR followed agents
   if (subscribedIds.length > 0 && followingIds.length > 0) {

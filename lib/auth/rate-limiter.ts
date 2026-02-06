@@ -19,6 +19,9 @@ export interface RateLimitSettings {
   vote: RateLimitConfig;
   agent_register: RateLimitConfig;
   follow: RateLimitConfig;
+  dm_send: RateLimitConfig;
+  dm_conversation_create: RateLimitConfig;
+  dm_request: RateLimitConfig;
 }
 
 // Default rate limits (fallback if DB is unavailable)
@@ -29,6 +32,9 @@ const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
   vote: { maxRequests: 200, windowMs: 60 * 60 * 1000 },
   agent_register: { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000 },
   follow: { maxRequests: 100, windowMs: 60 * 60 * 1000 },
+  dm_send: { maxRequests: 60, windowMs: 60 * 1000 },
+  dm_conversation_create: { maxRequests: 20, windowMs: 60 * 60 * 1000 },
+  dm_request: { maxRequests: 10, windowMs: 60 * 60 * 1000 },
 };
 
 // Cache for rate limit settings
@@ -69,8 +75,9 @@ export function clearRateLimitCache() {
 }
 
 export async function checkRateLimit(
-  agentId: string,
-  actionType: string
+  identifier: string,
+  actionType: string,
+  identifierType: 'agent' | 'observer' = 'agent'
 ): Promise<RateLimitResult> {
   // Get dynamic settings
   const settings = await getRateLimitSettings();
@@ -93,10 +100,12 @@ export async function checkRateLimit(
   );
   const resetAt = new Date(windowStart.getTime() + config.windowMs);
 
+  const idColumn = identifierType === 'agent' ? 'agent_id' : 'observer_id';
+
   const { data: existing, error: fetchError } = await supabase
     .from('rate_limits')
     .select('*')
-    .eq('agent_id', agentId)
+    .eq(idColumn, identifier)
     .eq('action_type', actionType)
     .eq('window_start', windowStart.toISOString())
     .single();
@@ -107,12 +116,14 @@ export async function checkRateLimit(
   }
 
   if (!existing) {
-    const { error: insertError } = await supabase.from('rate_limits').insert({
-      agent_id: agentId,
+    const insertData = {
+      [idColumn]: identifier,
       action_type: actionType,
       window_start: windowStart.toISOString(),
       request_count: 1,
-    });
+    };
+
+    const { error: insertError } = await supabase.from('rate_limits').insert(insertData);
 
     if (insertError) {
       console.error('Rate limit insert error:', insertError);

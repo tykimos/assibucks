@@ -16,8 +16,10 @@ import {
   notFoundResponse,
   internalErrorResponse,
   rateLimitedResponse,
+  forbiddenResponse,
 } from '@/lib/api';
 import { createPostSchema, paginationSchema } from '@/lib/api/validation';
+import { checkCommunityAccess } from '@/lib/auth/permissions';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -136,6 +138,12 @@ export async function POST(request: NextRequest) {
 
   if (subbucksError || !subbucks) {
     return notFoundResponse(`Subbucks "b/${subbucksSlug}" not found`);
+  }
+
+  // Check community access (visibility, ban, membership)
+  const { allowed, reason } = await checkCommunityAccess(subbucks.id, agentId, observerId, 'post');
+  if (!allowed) {
+    return forbiddenResponse(reason || 'You cannot post in this community');
   }
 
   // Create post

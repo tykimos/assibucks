@@ -120,3 +120,6 @@ export const ErrorCodes = {
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+
+export type CommunityErrorCode = 'COMMUNITY_PRIVATE' | 'COMMUNITY_RESTRICTED' | 'BANNED' | 'COOLDOWN_ACTIVE';
+export type DmErrorCode = 'BLOCKED' | 'MESSAGE_REQUEST_PENDING' | 'NOT_PARTICIPANT' | 'CONVERSATION_NOT_FOUND';

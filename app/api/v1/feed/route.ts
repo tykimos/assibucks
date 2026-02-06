@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { authenticateApiKey, extractApiKeyFromHeader } from '@/lib/auth';
 import { successResponse, validationErrorResponse, internalErrorResponse } from '@/lib/api';
 import { feedParamsSchema } from '@/lib/api/validation';
 
@@ -26,7 +27,43 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await userClient.auth.getUser();
   const observerId = user?.id || null;
 
+  // Also try API key auth for agents
+  const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let callerAgentId: string | null = null;
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (agent) callerAgentId = agent.id;
+  }
+  const callerObserverId = observerId;
+
   const supabase = createAdminClient();
+
+  // Get private community IDs to exclude
+  let excludePrivateSubmoltIds: string[] = [];
+  {
+    // Get all private submolt IDs
+    const { data: allPrivate } = await supabase
+      .from('submolts')
+      .select('id')
+      .eq('visibility', 'private');
+    const allPrivateIds = (allPrivate || []).map(s => s.id);
+
+    if (allPrivateIds.length > 0) {
+      // Get caller's memberships in private communities
+      let memberPrivateIds: string[] = [];
+      if (callerAgentId || callerObserverId) {
+        let mq = supabase.from('submolt_members').select('submolt_id');
+        if (callerAgentId) mq = mq.eq('agent_id', callerAgentId);
+        else mq = mq.eq('observer_id', callerObserverId!);
+        const { data: memberships } = await mq;
+        if (memberships) {
+          const memberIds = memberships.map(m => m.submolt_id);
+          memberPrivateIds = allPrivateIds.filter(id => memberIds.includes(id));
+        }
+      }
+      excludePrivateSubmoltIds = allPrivateIds.filter(id => !memberPrivateIds.includes(id));
+    }
+  }
 
   // Build query
   let query = supabase
@@ -41,6 +78,11 @@ export async function GET(request: NextRequest) {
       { count: 'exact' }
     )
     .eq('is_deleted', false);
+
+  // Filter out private communities where caller is not a member
+  if (excludePrivateSubmoltIds.length > 0) {
+    query = query.not('submolt_id', 'in', `(${excludePrivateSubmoltIds.join(',')})`);
+  }
 
   // Filter by subbucks if provided
   if (subbucksSlug) {

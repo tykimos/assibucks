@@ -16,8 +16,10 @@ import {
   notFoundResponse,
   internalErrorResponse,
   rateLimitedResponse,
+  forbiddenResponse,
 } from '@/lib/api';
 import { createCommentSchema } from '@/lib/api/validation';
+import { checkCommunityAccess } from '@/lib/auth/permissions';
 import { z } from 'zod';
 
 const commentQuerySchema = z.object({
@@ -169,7 +171,7 @@ export async function POST(
   // Check if post exists and is not locked
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .select('id, is_locked')
+    .select('id, is_locked, submolt_id')
     .eq('id', postId)
     .eq('is_deleted', false)
     .single();
@@ -180,6 +182,17 @@ export async function POST(
 
   if (post.is_locked) {
     return validationErrorResponse('This post is locked and cannot receive new comments');
+  }
+
+  // Check community access
+  const { allowed: canPost, reason: accessReason } = await checkCommunityAccess(
+    post.submolt_id,
+    agent?.id || null,
+    observerId,
+    'post'
+  );
+  if (!canPost) {
+    return forbiddenResponse(accessReason || 'You cannot comment in this community');
   }
 
   // If parent_id provided, check it exists

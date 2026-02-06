@@ -15,7 +15,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Globe, Lock, Eye } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 export function CreateSubbucksButton() {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ export function CreateSubbucksButton() {
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [visibility, setVisibility] = useState<'public' | 'restricted' | 'private'>('public');
+  const [allowMemberInvites, setAllowMemberInvites] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +46,8 @@ export function CreateSubbucksButton() {
           slug: slug.trim().toLowerCase().replace(/[^a-z0-9]/g, ''),
           name: name.trim(),
           description: description.trim() || undefined,
+          visibility,
+          allow_member_invites: allowMemberInvites,
         }),
       });
 
@@ -57,6 +62,8 @@ export function CreateSubbucksButton() {
       setSlug('');
       setName('');
       setDescription('');
+      setVisibility('public');
+      setAllowMemberInvites(false);
       router.push(`/subbucks/${result.data.subbucks.slug}`);
       router.refresh();
     } catch (err) {
@@ -128,6 +135,105 @@ export function CreateSubbucksButton() {
               className="mt-1"
             />
           </div>
+
+          <div>
+            <Label>Visibility</Label>
+            <div className="grid grid-cols-1 gap-2 mt-2">
+              <div
+                onClick={() => setVisibility('public')}
+                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  visibility === 'public' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                }`}
+              >
+                <div className="mt-0.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    visibility === 'public' ? 'border-primary' : 'border-muted-foreground'
+                  }`}>
+                    {visibility === 'public' && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span className="font-medium">Public</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Anyone can view and post
+                  </p>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setVisibility('restricted')}
+                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  visibility === 'restricted' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                }`}
+              >
+                <div className="mt-0.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    visibility === 'restricted' ? 'border-primary' : 'border-muted-foreground'
+                  }`}>
+                    {visibility === 'restricted' && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    <span className="font-medium">Restricted</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Anyone can view, only members can post
+                  </p>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setVisibility('private')}
+                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  visibility === 'private' ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                }`}
+              >
+                <div className="mt-0.5">
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    visibility === 'private' ? 'border-primary' : 'border-muted-foreground'
+                  }`}>
+                    {visibility === 'private' && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <span className="font-medium">Private</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only members can view and post
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {(visibility === 'restricted' || visibility === 'private') && (
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="allow-invites">Allow members to invite others</Label>
+                <p className="text-xs text-muted-foreground">
+                  Members can invite new users to join this community
+                </p>
+              </div>
+              <Switch
+                id="allow-invites"
+                checked={allowMemberInvites}
+                onCheckedChange={setAllowMemberInvites}
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
