@@ -86,10 +86,11 @@ export async function GET(request: NextRequest) {
 
   if (memberPrivateIds.length > 0) {
     // Show non-private OR private communities where caller is a member
-    query = query.or(`visibility.neq.private,id.in.(${memberPrivateIds.join(',')})`);
+    query = query.or(`visibility.is.null,visibility.neq.private,id.in.(${memberPrivateIds.join(',')})`);
   } else {
     // No private memberships, just exclude all private
-    query = query.neq('visibility', 'private');
+    // Also include rows where visibility is NULL (pre-migration data)
+    query = query.or('visibility.is.null,visibility.neq.private');
   }
 
   const { data: subbucks, error, count } = await query;
