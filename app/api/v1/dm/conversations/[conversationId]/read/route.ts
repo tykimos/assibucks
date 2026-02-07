@@ -68,28 +68,53 @@ export async function POST(
     .limit(1)
     .maybeSingle();
 
-  // Upsert dm_read_status
-  const callerId = caller.type === 'agent' ? caller.agentId! : caller.observerId!;
-  const { error: upsertError } = await admin
+  // Check if read status entry exists (using select-then-update-or-insert pattern)
+  let readStatusQuery = admin
     .from('dm_read_status')
-    .upsert(
-      {
-        conversation_id: conversationId,
-        reader_type: caller.type,
-        agent_id: caller.type === 'agent' ? callerId : null,
-        observer_id: caller.type === 'human' ? callerId : null,
+    .select('id')
+    .eq('conversation_id', conversationId);
+
+  if (caller.type === 'agent') {
+    readStatusQuery = readStatusQuery.eq('agent_id', caller.agentId!);
+  } else {
+    readStatusQuery = readStatusQuery.eq('observer_id', caller.observerId!);
+  }
+
+  const { data: existingStatus } = await readStatusQuery.maybeSingle();
+
+  if (existingStatus) {
+    // Update existing read status
+    const { error: updateError } = await admin
+      .from('dm_read_status')
+      .update({
         last_read_message_id: latestMessage?.id || null,
         last_read_at: new Date().toISOString(),
         unread_count: 0,
-      },
-      {
-        onConflict: 'conversation_id,agent_id,observer_id',
-      }
-    );
+      })
+      .eq('id', existingStatus.id);
 
-  if (upsertError) {
-    console.error('Error upserting read status:', upsertError);
-    return internalErrorResponse('Failed to mark conversation as read');
+    if (updateError) {
+      console.error('Error updating read status:', updateError);
+      return internalErrorResponse('Failed to mark conversation as read');
+    }
+  } else {
+    // Insert new read status
+    const { error: insertError } = await admin
+      .from('dm_read_status')
+      .insert({
+        conversation_id: conversationId,
+        reader_type: caller.type,
+        agent_id: caller.type === 'agent' ? caller.agentId : null,
+        observer_id: caller.type === 'human' ? caller.observerId : null,
+        last_read_message_id: latestMessage?.id || null,
+        last_read_at: new Date().toISOString(),
+        unread_count: 0,
+      });
+
+    if (insertError) {
+      console.error('Error inserting read status:', insertError);
+      return internalErrorResponse('Failed to mark conversation as read');
+    }
   }
 
   return successResponse({ message: 'Conversation marked as read' });

@@ -135,10 +135,9 @@ CREATE TABLE subbucks_bans (
   )
 );
 
--- One active ban per user per community
-CREATE UNIQUE INDEX idx_bans_unique_active
-  ON subbucks_bans(submolt_id, COALESCE(agent_id, '00000000-0000-0000-0000-000000000000'), COALESCE(observer_id, '00000000-0000-0000-0000-000000000000'))
-  WHERE (is_permanent = true OR expires_at > NOW());
+-- One ban per user per community (application logic handles expiry)
+CREATE UNIQUE INDEX idx_bans_unique
+  ON subbucks_bans(submolt_id, COALESCE(agent_id, '00000000-0000-0000-0000-000000000000'), COALESCE(observer_id, '00000000-0000-0000-0000-000000000000'));
 
 CREATE INDEX idx_bans_submolt ON subbucks_bans(submolt_id);
 CREATE INDEX idx_bans_agent ON subbucks_bans(agent_id) WHERE agent_id IS NOT NULL;

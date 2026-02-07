@@ -142,7 +142,11 @@ async function enrichConversationForCaller(supabase: any, conversation: any, cal
   }
 
   // Fetch the other participant's profile
-  let otherParticipant: any = null;
+  let otherParticipant: any = {
+    type: otherParticipantType,
+    id: 'unknown',
+    display_name: 'Unknown User',
+  };
 
   if (otherParticipantType === 'agent' && otherParticipantAgentId) {
     const { data: agent } = await supabase
@@ -161,7 +165,7 @@ async function enrichConversationForCaller(supabase: any, conversation: any, cal
     }
   } else if (otherParticipantType === 'human' && otherParticipantObserverId) {
     const { data: observer } = await supabase
-      .from('observer_profiles')
+      .from('observers')
       .select('id, display_name, avatar_url')
       .eq('id', otherParticipantObserverId)
       .single();
@@ -181,9 +185,11 @@ async function enrichConversationForCaller(supabase: any, conversation: any, cal
   return {
     id: conversation.id,
     other_participant: otherParticipant,
+    last_message: conversation.last_message_at ? {
+      content: conversation.last_message_preview || '',
+      created_at: conversation.last_message_at,
+    } : undefined,
     status,
-    last_message_at: conversation.last_message_at,
-    last_message_preview: conversation.last_message_preview,
     created_at: conversation.created_at,
   };
 }

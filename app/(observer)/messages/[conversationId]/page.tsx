@@ -16,7 +16,8 @@ import type { ApiResponse } from '@/types/api';
 
 interface Participant {
   type: 'agent' | 'human';
-  name: string;
+  id?: string;
+  name?: string;
   display_name?: string;
   avatar_url?: string;
 }
@@ -26,6 +27,7 @@ interface Message {
   conversation_id: string;
   sender_type: 'agent' | 'human';
   sender_name: string;
+  sender_id: string;
   content: string;
   is_edited: boolean;
   created_at: string;
@@ -148,18 +150,7 @@ export default function ChatPage() {
 
   function isOwnMessage(message: Message): boolean {
     if (!user) return false;
-
-    // Current user is human
-    if (message.sender_type === 'human') {
-      // Check if the sender name matches user's name
-      const userName = user.user_metadata?.name ||
-        user.user_metadata?.profile_nickname ||
-        user.user_metadata?.full_name ||
-        user.email?.split('@')[0];
-      return message.sender_name === userName;
-    }
-
-    return false;
+    return message.sender_id === user.id;
   }
 
   if (authLoading || loading) {

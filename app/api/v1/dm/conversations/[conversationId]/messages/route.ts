@@ -112,50 +112,10 @@ export async function POST(
     return internalErrorResponse('Failed to send message');
   }
 
-  // Update conversation: last_message_at and last_message_preview
-  const preview = parsed.data.content.slice(0, 100);
-  const { error: updateConvError } = await admin
-    .from('dm_conversations')
-    .update({
-      last_message_at: new Date().toISOString(),
-      last_message_preview: preview,
-    })
-    .eq('id', conversationId);
-
-  if (updateConvError) {
-    console.error('Error updating conversation:', updateConvError);
-  }
-
-  // Update other participant's unread count
-  const { data: readStatus, error: readError } = await admin
-    .from('dm_read_status')
-    .select('*')
-    .eq('conversation_id', conversationId)
-    .eq(otherType === 'agent' ? 'agent_id' : 'observer_id', otherId)
-    .maybeSingle();
-
-  if (readError) {
-    console.error('Error fetching read status:', readError);
-  } else {
-    if (readStatus) {
-      // Increment unread_count
-      await admin
-        .from('dm_read_status')
-        .update({ unread_count: (readStatus.unread_count || 0) + 1 })
-        .eq('id', readStatus.id);
-    } else {
-      // Insert new read status with unread_count = 1
-      await admin
-        .from('dm_read_status')
-        .insert({
-          conversation_id: conversationId,
-          reader_type: otherType,
-          agent_id: otherType === 'agent' ? otherId : null,
-          observer_id: otherType === 'human' ? otherId : null,
-          unread_count: 1,
-        });
-    }
-  }
+  // Note: Database trigger 'trigger_update_dm_conversation_last_message' automatically:
+  // 1. Updates dm_conversations (last_message_at, last_message_preview)
+  // 2. Updates dm_read_status (increments unread_count for other participant)
+  // So we don't need to manually update these here.
 
   // Enrich message with sender_name for response
   let senderName = 'Unknown';
@@ -163,7 +123,7 @@ export async function POST(
     const { data: agent } = await admin.from('agents').select('name').eq('id', caller.agentId!).single();
     if (agent) senderName = agent.name;
   } else {
-    const { data: observer } = await admin.from('observer_profiles').select('display_name').eq('id', caller.observerId!).single();
+    const { data: observer } = await admin.from('observers').select('display_name').eq('id', caller.observerId!).single();
     if (observer) senderName = observer.display_name;
   }
 
@@ -172,6 +132,7 @@ export async function POST(
     conversation_id: message.conversation_id,
     sender_type: message.sender_type,
     sender_name: senderName,
+    sender_id: message.sender_agent_id || message.sender_observer_id,
     content: message.content,
     is_edited: message.is_edited,
     created_at: message.created_at,
@@ -282,7 +243,7 @@ export async function GET(
   }
 
   if (observerIds.length > 0) {
-    const { data: observers } = await admin.from('observer_profiles').select('id, display_name').in('id', observerIds);
+    const { data: observers } = await admin.from('observers').select('id, display_name').in('id', observerIds);
     (observers || []).forEach((o: any) => { nameMap[o.id] = o.display_name; });
   }
 
@@ -291,6 +252,7 @@ export async function GET(
     conversation_id: msg.conversation_id,
     sender_type: msg.sender_type,
     sender_name: nameMap[msg.sender_agent_id || msg.sender_observer_id] || 'Unknown',
+    sender_id: msg.sender_agent_id || msg.sender_observer_id,
     content: msg.content,
     is_edited: msg.is_edited,
     created_at: msg.created_at,

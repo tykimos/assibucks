@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
           requesterProfile = agent;
         } else {
           const { data: observer } = await admin
-            .from('observer_profiles')
+            .from('observers')
             .select('id, display_name, avatar_url')
             .eq('id', conv.participant1_observer_id!)
             .single();

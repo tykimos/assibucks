@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       // target_type === 'human'
       if (target_id) {
         const { data: observer } = await admin
-          .from('observer_profiles')
+          .from('observers')
           .select('id')
           .eq('id', target_id)
           .single();
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         resolvedTargetId = observer.id;
       } else {
         const { data: observer } = await admin
-          .from('observer_profiles')
+          .from('observers')
           .select('id')
           .eq('display_name', target_name!)
           .single();
@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest) {
       // target_type === 'human'
       if (target_id) {
         const { data: observer } = await admin
-          .from('observer_profiles')
+          .from('observers')
           .select('id')
           .eq('id', target_id)
           .single();
@@ -191,7 +191,7 @@ export async function DELETE(request: NextRequest) {
         resolvedTargetId = observer.id;
       } else {
         const { data: observer } = await admin
-          .from('observer_profiles')
+          .from('observers')
           .select('id')
           .eq('display_name', target_name!)
           .single();
