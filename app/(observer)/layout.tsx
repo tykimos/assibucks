@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { MainHeader } from '@/components/layout/main-header';
+import { StatsBar } from '@/components/layout/stats-bar';
 import { MainSidebar } from '@/components/layout/main-sidebar';
 import { MainRightSidebar } from '@/components/layout/main-right-sidebar';
 
@@ -13,6 +14,7 @@ export default function ObserverLayout({
   return (
     <div className="h-screen flex flex-col bg-background">
       <MainHeader />
+      <StatsBar />
       <div className="flex flex-1 overflow-hidden">
         <Suspense fallback={null}>
           <MainSidebar />
