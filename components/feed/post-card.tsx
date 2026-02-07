@@ -6,7 +6,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from './vote-buttons';
-import { MessageSquare, ExternalLink, Bot, User } from 'lucide-react';
+import { MessageSquare, Bot, User } from 'lucide-react';
+import { LinkPreview } from './link-preview';
 import type { PostWithRelations } from '@/types/database';
 
 interface PostCardProps {
@@ -102,15 +103,7 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
               </h3>
             </Link>
             {post.post_type === 'link' && post.url && (
-              <a
-                href={post.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                {new URL(post.url).hostname}
-              </a>
+              <LinkPreview url={post.url} />
             )}
             {post.content && (
               <p className="mt-2 text-sm text-muted-foreground line-clamp-3 break-words">

@@ -10,7 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { Bot, TrendingUp, MessageSquare, Calendar, Hash, Send, Loader2 } from 'lucide-react';
+import { Bot, TrendingUp, MessageSquare, Calendar, Hash, Send, Loader2, UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { AgentPublic, Post, Submolt } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -32,6 +33,10 @@ export default function AgentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingChat, setStartingChat] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     async function fetchAgent() {
@@ -54,6 +59,30 @@ export default function AgentProfilePage() {
 
     fetchAgent();
   }, [name]);
+
+  useEffect(() => {
+    async function fetchFollowStatus() {
+      if (!data?.agent?.id || !user) return;
+
+      try {
+        const response = await fetch(
+          `/api/v1/follow/status?target_type=agent&target_id=${data.agent.id}`,
+          { credentials: 'include' }
+        );
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setIsFollowing(result.data.is_following || false);
+          setFollowerCount(result.data.follower_count || 0);
+          setFollowingCount(result.data.following_count || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch follow status:', err);
+      }
+    }
+
+    fetchFollowStatus();
+  }, [data?.agent?.id, user]);
 
   if (loading) {
     return (
@@ -104,6 +133,62 @@ export default function AgentProfilePage() {
     }
   }
 
+  async function handleFollow() {
+    if (!data?.agent?.id) return;
+    setFollowLoading(true);
+    try {
+      const response = await fetch('/api/v1/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          target_type: 'agent',
+          target_id: data.agent.id,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setIsFollowing(true);
+        setFollowerCount((prev) => prev + 1);
+      } else {
+        alert(result.error?.message || 'Failed to follow');
+      }
+    } catch (err) {
+      alert('Failed to follow. Please try again.');
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
+  async function handleUnfollow() {
+    if (!data?.agent?.id) return;
+    setFollowLoading(true);
+    try {
+      const response = await fetch('/api/v1/follow', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          target_type: 'agent',
+          target_id: data.agent.id,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setIsFollowing(false);
+        setFollowerCount((prev) => Math.max(0, prev - 1));
+      } else {
+        alert(result.error?.message || 'Failed to unfollow');
+      }
+    } catch (err) {
+      alert('Failed to unfollow. Please try again.');
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
   const { agent, recent_posts } = data;
   const joinedAgo = formatDistanceToNow(new Date(agent.created_at), {
     addSuffix: true,
@@ -115,54 +200,63 @@ export default function AgentProfilePage() {
       <Card>
         <CardHeader>
           <div className="flex items-start gap-6">
-            <Avatar className="h-20 w-20">
+            <Avatar className="h-24 w-24">
               <AvatarImage src={agent.avatar_url || undefined} />
-              <AvatarFallback className="text-2xl">
+              <AvatarFallback className="text-3xl">
                 {agent.display_name.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold">{agent.display_name}</h1>
-                  <p className="text-muted-foreground">@{agent.name}</p>
-                </div>
+              <h1 className="text-2xl font-bold">{agent.display_name}</h1>
+              <p className="text-muted-foreground">@{agent.name}</p>
+              {agent.bio && <p className="mt-3 text-sm">{agent.bio}</p>}
+
+              <div className="flex gap-2 mt-4">
                 {user && (
-                  <Button onClick={handleStartChat} disabled={startingChat} size="sm">
-                    {startingChat ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                    Message
-                  </Button>
+                  <>
+                    <Button
+                      onClick={isFollowing ? handleUnfollow : handleFollow}
+                      variant={isFollowing ? "outline" : "default"}
+                      className={cn("flex-1", isFollowing && "hover:border-destructive hover:text-destructive")}
+                      disabled={followLoading}
+                    >
+                      {followLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : isFollowing ? (
+                        'Following'
+                      ) : (
+                        'Follow'
+                      )}
+                    </Button>
+                    <Button onClick={handleStartChat} disabled={startingChat} variant="outline" size="icon">
+                      {startingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </>
                 )}
               </div>
-              {agent.bio && <p className="mt-2 text-sm">{agent.bio}</p>}
+
+              <div className="flex items-center gap-4 text-sm mt-4">
+                <div>
+                  <span className="font-bold">{followerCount}</span>{' '}
+                  <span className="text-muted-foreground">Followers</span>
+                </div>
+                <div>
+                  <span className="font-bold">{followingCount}</span>{' '}
+                  <span className="text-muted-foreground">Following</span>
+                </div>
+                <div>
+                  <span className="font-bold">{totalKarma.toLocaleString()}</span>{' '}
+                  <span className="text-muted-foreground">Bucks</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 mt-3 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                Joined {joinedAgo}
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{totalKarma.toLocaleString()}</span>
-              <span className="text-muted-foreground">total bucks</span>
-            </div>
-            <div className="text-muted-foreground">
-              <span className="font-medium text-foreground">
-                {agent.post_karma.toLocaleString()}
-              </span>{' '}
-              post bucks
-            </div>
-            <div className="text-muted-foreground">
-              <span className="font-medium text-foreground">
-                {agent.comment_karma.toLocaleString()}
-              </span>{' '}
-              comment bucks
-            </div>
-          </div>
-          <div className="flex items-center gap-1 mt-4 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            Joined {joinedAgo}
-          </div>
-        </CardContent>
       </Card>
 
       <Card>

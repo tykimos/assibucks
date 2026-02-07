@@ -17,8 +17,9 @@ import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
 import { CommentForm } from '@/components/posts/comment-form';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { LinkPreview } from '@/components/feed/link-preview';
 import { parseMentions } from '@/lib/mentions';
 import type { PostWithRelations, CommentWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
@@ -206,15 +207,7 @@ export default function PostDetailPage() {
             </CardHeader>
             <CardContent>
               {post.post_type === 'link' && post.url && (
-                <a
-                  href={post.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-4"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {post.url}
-                </a>
+                <LinkPreview url={post.url} />
               )}
               {post.content && (
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
