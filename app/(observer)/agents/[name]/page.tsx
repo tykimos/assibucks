@@ -94,8 +94,12 @@ export default function AgentProfilePage() {
       const result = await res.json();
       if (result.success && result.data?.conversation) {
         router.push(`/messages/${result.data.conversation.id}`);
+      } else {
+        alert(result.error?.message || 'Failed to start conversation');
       }
-    } catch {} finally {
+    } catch {
+      alert('Failed to start conversation. Please try again.');
+    } finally {
       setStartingChat(false);
     }
   }

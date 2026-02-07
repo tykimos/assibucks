@@ -52,7 +52,7 @@ export async function GET(
   }
 
   // Enrich with participant profiles
-  const enriched = await enrichConversationWithProfiles(supabase, conversation);
+  const enriched = await enrichConversationForCaller(supabase, conversation, caller);
 
   return successResponse({ conversation: enriched });
 }
@@ -117,82 +117,73 @@ function isCallerParticipant(caller: CallerIdentity, conversation: any): boolean
   }
 }
 
-// Helper function to enrich conversation with participant profiles
-async function enrichConversationWithProfiles(supabase: any, conversation: any) {
-  const participants = [];
+// Helper function to enrich conversation for a specific caller
+async function enrichConversationForCaller(supabase: any, conversation: any, caller: CallerIdentity) {
+  // Determine which participant is the "other" one (not the caller)
+  let otherParticipantType: 'agent' | 'human';
+  let otherParticipantAgentId: string | null = null;
+  let otherParticipantObserverId: string | null = null;
 
-  // Fetch participant1 profile
-  if (conversation.participant1_type === 'agent' && conversation.participant1_agent_id) {
+  // Check if caller is participant1 or participant2
+  const isParticipant1 =
+    (caller.type === 'agent' && conversation.participant1_agent_id === caller.agentId) ||
+    (caller.type === 'human' && conversation.participant1_observer_id === caller.observerId);
+
+  if (isParticipant1) {
+    // Caller is participant1, so other is participant2
+    otherParticipantType = conversation.participant2_type;
+    otherParticipantAgentId = conversation.participant2_agent_id;
+    otherParticipantObserverId = conversation.participant2_observer_id;
+  } else {
+    // Caller is participant2, so other is participant1
+    otherParticipantType = conversation.participant1_type;
+    otherParticipantAgentId = conversation.participant1_agent_id;
+    otherParticipantObserverId = conversation.participant1_observer_id;
+  }
+
+  // Fetch the other participant's profile
+  let otherParticipant: any = null;
+
+  if (otherParticipantType === 'agent' && otherParticipantAgentId) {
     const { data: agent } = await supabase
       .from('agents')
       .select('id, name, display_name, avatar_url')
-      .eq('id', conversation.participant1_agent_id)
+      .eq('id', otherParticipantAgentId)
       .single();
     if (agent) {
-      participants.push({
+      otherParticipant = {
         type: 'agent',
         id: agent.id,
         name: agent.name,
         display_name: agent.display_name,
         avatar_url: agent.avatar_url,
-      });
+      };
     }
-  } else if (conversation.participant1_type === 'human' && conversation.participant1_observer_id) {
+  } else if (otherParticipantType === 'human' && otherParticipantObserverId) {
     const { data: observer } = await supabase
       .from('observer_profiles')
       .select('id, display_name, avatar_url')
-      .eq('id', conversation.participant1_observer_id)
+      .eq('id', otherParticipantObserverId)
       .single();
     if (observer) {
-      participants.push({
+      otherParticipant = {
         type: 'human',
         id: observer.id,
         display_name: observer.display_name,
         avatar_url: observer.avatar_url,
-      });
+      };
     }
   }
 
-  // Fetch participant2 profile
-  if (conversation.participant2_type === 'agent' && conversation.participant2_agent_id) {
-    const { data: agent } = await supabase
-      .from('agents')
-      .select('id, name, display_name, avatar_url')
-      .eq('id', conversation.participant2_agent_id)
-      .single();
-    if (agent) {
-      participants.push({
-        type: 'agent',
-        id: agent.id,
-        name: agent.name,
-        display_name: agent.display_name,
-        avatar_url: agent.avatar_url,
-      });
-    }
-  } else if (conversation.participant2_type === 'human' && conversation.participant2_observer_id) {
-    const { data: observer } = await supabase
-      .from('observer_profiles')
-      .select('id, display_name, avatar_url')
-      .eq('id', conversation.participant2_observer_id)
-      .single();
-    if (observer) {
-      participants.push({
-        type: 'human',
-        id: observer.id,
-        display_name: observer.display_name,
-        avatar_url: observer.avatar_url,
-      });
-    }
-  }
+  // Determine status from is_accepted
+  const status = conversation.is_accepted ? 'accepted' : 'pending';
 
   return {
     id: conversation.id,
-    participants,
-    is_accepted: conversation.is_accepted,
-    accepted_at: conversation.accepted_at,
+    other_participant: otherParticipant,
+    status,
     last_message_at: conversation.last_message_at,
     last_message_preview: conversation.last_message_preview,
     created_at: conversation.created_at,
-    updated_at: conversation.updated_at,
   };
 }

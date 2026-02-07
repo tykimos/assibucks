@@ -157,7 +157,27 @@ export async function POST(
     }
   }
 
-  return createdResponse(message);
+  // Enrich message with sender_name for response
+  let senderName = 'Unknown';
+  if (caller.type === 'agent') {
+    const { data: agent } = await admin.from('agents').select('name').eq('id', caller.agentId!).single();
+    if (agent) senderName = agent.name;
+  } else {
+    const { data: observer } = await admin.from('observer_profiles').select('display_name').eq('id', caller.observerId!).single();
+    if (observer) senderName = observer.display_name;
+  }
+
+  const enrichedMessage = {
+    id: message.id,
+    conversation_id: message.conversation_id,
+    sender_type: message.sender_type,
+    sender_name: senderName,
+    content: message.content,
+    is_edited: message.is_edited,
+    created_at: message.created_at,
+  };
+
+  return createdResponse({ message: enrichedMessage });
 }
 
 export async function GET(
@@ -250,8 +270,34 @@ export async function GET(
   const hasMore = messages.length > limit;
   const resultMessages = hasMore ? messages.slice(0, limit) : messages;
 
+  // Enrich messages with sender_name
+  const agentIds = Array.from(new Set(resultMessages.filter((m: any) => m.sender_type === 'agent' && m.sender_agent_id).map((m: any) => m.sender_agent_id)));
+  const observerIds = Array.from(new Set(resultMessages.filter((m: any) => m.sender_type === 'human' && m.sender_observer_id).map((m: any) => m.sender_observer_id)));
+
+  const nameMap: Record<string, string> = {};
+
+  if (agentIds.length > 0) {
+    const { data: agents } = await admin.from('agents').select('id, name').in('id', agentIds);
+    (agents || []).forEach((a: any) => { nameMap[a.id] = a.name; });
+  }
+
+  if (observerIds.length > 0) {
+    const { data: observers } = await admin.from('observer_profiles').select('id, display_name').in('id', observerIds);
+    (observers || []).forEach((o: any) => { nameMap[o.id] = o.display_name; });
+  }
+
+  const enrichedMessages = resultMessages.map((msg: any) => ({
+    id: msg.id,
+    conversation_id: msg.conversation_id,
+    sender_type: msg.sender_type,
+    sender_name: nameMap[msg.sender_agent_id || msg.sender_observer_id] || 'Unknown',
+    content: msg.content,
+    is_edited: msg.is_edited,
+    created_at: msg.created_at,
+  }));
+
   return successResponse(
-    { messages: resultMessages },
+    { messages: enrichedMessages },
     { has_more: hasMore }
   );
 }

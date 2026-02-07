@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
   if (conv1) {
     // Fetch participant details
-    const conversation = await enrichConversationWithProfiles(supabase, conv1);
+    const conversation = await enrichConversationForCaller(supabase, conv1, caller);
     return successResponse({ conversation });
   }
 
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 
   if (conv2) {
     // Fetch participant details
-    const conversation = await enrichConversationWithProfiles(supabase, conv2);
+    const conversation = await enrichConversationForCaller(supabase, conv2, caller);
     return successResponse({ conversation });
   }
 
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Enrich with participant profiles
-  const conversation = await enrichConversationWithProfiles(supabase, newConv);
+  const conversation = await enrichConversationForCaller(supabase, newConv, caller);
 
   return createdResponse({ conversation });
 }
@@ -306,7 +306,7 @@ export async function GET(request: NextRequest) {
   // Enrich each conversation with participant profiles and unread count
   const enrichedConversations = await Promise.all(
     (conversations || []).map(async (conv: any) => {
-      const enriched = await enrichConversationWithProfiles(supabase, conv);
+      const enriched = await enrichConversationForCaller(supabase, conv, caller);
 
       // Get unread count for caller
       let readStatusQuery = supabase
@@ -341,82 +341,65 @@ export async function GET(request: NextRequest) {
   );
 }
 
-// Helper function to enrich conversation with participant profiles
-async function enrichConversationWithProfiles(supabase: any, conversation: any) {
-  const participants = [];
+// Helper function to enrich conversation for caller (returns other_participant instead of participants array)
+async function enrichConversationForCaller(supabase: any, conversation: any, caller: CallerIdentity) {
+  // Determine which participant is "other"
+  let otherType: string;
+  let otherAgentId: string | null = null;
+  let otherObserverId: string | null = null;
 
-  // Fetch participant1 profile
-  if (conversation.participant1_type === 'agent' && conversation.participant1_agent_id) {
-    const { data: agent } = await supabase
-      .from('agents')
-      .select('id, name, display_name, avatar_url')
-      .eq('id', conversation.participant1_agent_id)
-      .single();
-    if (agent) {
-      participants.push({
-        type: 'agent',
-        id: agent.id,
-        name: agent.name,
-        display_name: agent.display_name,
-        avatar_url: agent.avatar_url,
-      });
+  if (caller.type === 'agent') {
+    if (conversation.participant1_agent_id === caller.agentId) {
+      otherType = conversation.participant2_type;
+      otherAgentId = conversation.participant2_agent_id;
+      otherObserverId = conversation.participant2_observer_id;
+    } else {
+      otherType = conversation.participant1_type;
+      otherAgentId = conversation.participant1_agent_id;
+      otherObserverId = conversation.participant1_observer_id;
     }
-  } else if (conversation.participant1_type === 'human' && conversation.participant1_observer_id) {
-    const { data: observer } = await supabase
-      .from('observer_profiles')
-      .select('id, display_name, avatar_url')
-      .eq('id', conversation.participant1_observer_id)
-      .single();
-    if (observer) {
-      participants.push({
-        type: 'human',
-        id: observer.id,
-        display_name: observer.display_name,
-        avatar_url: observer.avatar_url,
-      });
+  } else {
+    if (conversation.participant1_observer_id === caller.observerId) {
+      otherType = conversation.participant2_type;
+      otherAgentId = conversation.participant2_agent_id;
+      otherObserverId = conversation.participant2_observer_id;
+    } else {
+      otherType = conversation.participant1_type;
+      otherAgentId = conversation.participant1_agent_id;
+      otherObserverId = conversation.participant1_observer_id;
     }
   }
 
-  // Fetch participant2 profile
-  if (conversation.participant2_type === 'agent' && conversation.participant2_agent_id) {
+  let other_participant: any = { type: otherType };
+
+  if (otherType === 'agent' && otherAgentId) {
     const { data: agent } = await supabase
       .from('agents')
       .select('id, name, display_name, avatar_url')
-      .eq('id', conversation.participant2_agent_id)
+      .eq('id', otherAgentId)
       .single();
     if (agent) {
-      participants.push({
-        type: 'agent',
-        id: agent.id,
-        name: agent.name,
-        display_name: agent.display_name,
-        avatar_url: agent.avatar_url,
-      });
+      other_participant = { type: 'agent', id: agent.id, name: agent.name, display_name: agent.display_name, avatar_url: agent.avatar_url };
     }
-  } else if (conversation.participant2_type === 'human' && conversation.participant2_observer_id) {
+  } else if (otherObserverId) {
     const { data: observer } = await supabase
       .from('observer_profiles')
       .select('id, display_name, avatar_url')
-      .eq('id', conversation.participant2_observer_id)
+      .eq('id', otherObserverId)
       .single();
     if (observer) {
-      participants.push({
-        type: 'human',
-        id: observer.id,
-        display_name: observer.display_name,
-        avatar_url: observer.avatar_url,
-      });
+      other_participant = { type: 'human', id: observer.id, display_name: observer.display_name, avatar_url: observer.avatar_url };
     }
   }
 
   return {
     id: conversation.id,
-    participants,
-    is_accepted: conversation.is_accepted,
-    accepted_at: conversation.accepted_at,
-    last_message_at: conversation.last_message_at,
-    last_message_preview: conversation.last_message_preview,
+    other_participant,
+    last_message: conversation.last_message_at ? {
+      content: conversation.last_message_preview || '',
+      created_at: conversation.last_message_at,
+    } : undefined,
+    status: conversation.is_accepted ? 'accepted' : 'pending',
     created_at: conversation.created_at,
-    updated_at: conversation.updated_at,
   };
 }
