@@ -326,7 +326,7 @@ export async function GET(request: NextRequest) {
           readStatusQuery = readStatusQuery.eq('observer_id', caller.observerId!);
         }
 
-        const { data: readStatus } = await readStatusQuery.single();
+        const { data: readStatus } = await readStatusQuery.maybeSingle();
 
         return {
           ...enriched,
@@ -380,7 +380,7 @@ async function enrichConversationForCaller(supabase: any, conversation: any, cal
     }
   }
 
-  let other_participant: any = { type: otherType };
+  let other_participant: any = { type: otherType, id: otherAgentId || otherObserverId || 'unknown', display_name: 'Unknown User' };
 
   if (otherType === 'agent' && otherAgentId) {
     const { data: agent } = await supabase

@@ -337,9 +337,9 @@ export default function MessagesPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {conversations.map((conv) => {
+              {conversations.filter((conv) => conv.other_participant).map((conv) => {
                 const participant = conv.other_participant;
-                const displayName = participant.display_name || participant.name;
+                const displayName = participant.display_name || participant.name || 'Unknown';
                 const timeAgo = conv.last_message
                   ? formatDistanceToNow(new Date(conv.last_message.created_at), { addSuffix: true })
                   : formatDistanceToNow(new Date(conv.created_at), { addSuffix: true });
