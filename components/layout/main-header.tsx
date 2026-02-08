@@ -13,7 +13,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MobileNav } from '@/components/layout/mobile-nav';
-import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText, Settings, MessageSquare, Mail } from 'lucide-react';
+import { Bot, Coffee, LogIn, LogOut, Search, BarChart3, FileText, Settings, MessageSquare, Mail, SquarePen } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { CreatePostForm } from '@/components/posts/create-post-form';
 
 function DmBadge() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -50,6 +57,7 @@ function DmBadge() {
 
 export function MainHeader() {
   const { user, loading, signOut } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <header className="shrink-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -97,6 +105,28 @@ export function MainHeader() {
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
             <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCreateOpen(true)}
+              >
+                <SquarePen className="h-4 w-4" />
+                <span className="sr-only">Create Post</span>
+              </Button>
+              <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+                <SheetContent side="bottom" className="h-[85dvh] rounded-t-2xl sm:h-auto sm:max-h-[85dvh] sm:rounded-t-2xl">
+                  <SheetHeader className="pb-4 shrink-0">
+                    <SheetTitle>Create Post</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6">
+                    <CreatePostForm
+                      onSuccess={() => setCreateOpen(false)}
+                      compact
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
               <DmBadge />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
