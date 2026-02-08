@@ -54,6 +54,8 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!authLoading && !user) {
       router.push('/login');
       return;
@@ -64,7 +66,11 @@ export default function ChatPage() {
       fetchMessages();
       markAsRead();
     }
-  }, [user, authLoading, conversationId, router]);
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [user, authLoading, conversationId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -74,6 +80,8 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
+  const isMountedRef = useRef(true);
+
   async function fetchConversation() {
     try {
       const response = await fetch(`/api/v1/dm/conversations/${conversationId}`, {
@@ -81,11 +89,13 @@ export default function ChatPage() {
       });
       const result: ApiResponse<{ conversation: ConversationDetail }> = await response.json();
 
-      if (result.success && result.data) {
+      if (isMountedRef.current && result.success && result.data) {
         setConversation(result.data.conversation);
       }
     } catch (error) {
-      console.error('Failed to fetch conversation:', error);
+      if (isMountedRef.current) {
+        console.error('Failed to fetch conversation:', error);
+      }
     }
   }
 
@@ -96,14 +106,18 @@ export default function ChatPage() {
       });
       const result: ApiResponse<{ messages: Message[] }> = await response.json();
 
-      if (result.success && result.data) {
+      if (isMountedRef.current && result.success && result.data) {
         // Messages come in DESC order (newest first), reverse for display
         setMessages([...result.data.messages].reverse());
       }
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
+      if (isMountedRef.current) {
+        console.error('Failed to fetch messages:', error);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }
 

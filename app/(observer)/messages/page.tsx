@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -60,8 +60,11 @@ export default function MessagesPage() {
   const [recipientName, setRecipientName] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!authLoading && !user) {
       router.push('/login');
       return;
@@ -71,7 +74,11 @@ export default function MessagesPage() {
       fetchConversations();
       fetchRequests();
     }
-  }, [user, authLoading, router]);
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [user, authLoading]);
 
   async function fetchConversations() {
     try {
@@ -80,13 +87,17 @@ export default function MessagesPage() {
       });
       const result: ApiResponse<{ conversations: Conversation[] }> = await response.json();
 
-      if (result.success && result.data) {
+      if (isMountedRef.current && result.success && result.data) {
         setConversations(result.data.conversations);
       }
     } catch (error) {
-      console.error('Failed to fetch conversations:', error);
+      if (isMountedRef.current) {
+        console.error('Failed to fetch conversations:', error);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }
 
@@ -97,13 +108,17 @@ export default function MessagesPage() {
       });
       const result: ApiResponse<{ requests: MessageRequest[] }> = await response.json();
 
-      if (result.success && result.data) {
+      if (isMountedRef.current && result.success && result.data) {
         setRequests(result.data.requests);
       }
     } catch (error) {
-      console.error('Failed to fetch requests:', error);
+      if (isMountedRef.current) {
+        console.error('Failed to fetch requests:', error);
+      }
     } finally {
-      setRequestsLoading(false);
+      if (isMountedRef.current) {
+        setRequestsLoading(false);
+      }
     }
   }
 

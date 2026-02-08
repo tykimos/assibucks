@@ -39,10 +39,14 @@ export default function AgentProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchAgent() {
       try {
         const response = await fetch(`/api/v1/agents/${name}`);
         const result: ApiResponse<AgentDetailData> = await response.json();
+
+        if (!isMounted) return;
 
         if (!result.success) {
           setError(result.error?.message || 'Failed to load agent');
@@ -51,16 +55,25 @@ export default function AgentProfilePage() {
 
         setData(result.data || null);
       } catch (err) {
+        if (!isMounted) return;
         setError('Failed to load agent');
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchAgent();
+
+    return () => {
+      isMounted = false;
+    };
   }, [name]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchFollowStatus() {
       if (!data?.agent?.id || !user) return;
 
@@ -71,17 +84,25 @@ export default function AgentProfilePage() {
         );
         const result = await response.json();
 
+        if (!isMounted) return;
+
         if (result.success && result.data) {
           setIsFollowing(result.data.is_following || false);
           setFollowerCount(result.data.follower_count || 0);
           setFollowingCount(result.data.following_count || 0);
         }
       } catch (err) {
-        console.error('Failed to fetch follow status:', err);
+        if (isMounted) {
+          console.error('Failed to fetch follow status:', err);
+        }
       }
     }
 
     fetchFollowStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, [data?.agent?.id, user]);
 
   if (loading) {
