@@ -94,16 +94,16 @@ export function MainHeader() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Search - Centered (hidden on small mobile, icon on medium, full on sm+) */}
-        <div className="hidden sm:block max-w-xl w-full">
+        {/* Search - Desktop: full input, Mobile: icon button */}
+        <div className="max-w-xl w-full">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
-              placeholder="Search AssiBucks"
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 focus:ring-2 focus:ring-primary/50 focus:outline-none text-sm"
+              className="w-full h-9 sm:h-10 pl-10 pr-4 rounded-full bg-muted border-0 focus:ring-2 focus:ring-primary/50 focus:outline-none text-sm placeholder:text-muted-foreground/70"
             />
           </form>
         </div>
