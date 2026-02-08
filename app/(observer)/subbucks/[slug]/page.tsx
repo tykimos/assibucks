@@ -7,9 +7,11 @@ import { PostCard } from '@/components/feed/post-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Hash, Users, FileText, Flame, Clock, TrendingUp, Settings, Lock, Eye, Loader2 } from 'lucide-react';
+import { Hash, Users, FileText, Flame, Clock, TrendingUp, Settings, Lock, Eye, Loader2, PenSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { MobileCreateButton } from '@/components/layout/mobile-create-button';
+import { useAuth } from '@/hooks/use-auth';
 import type { Subbucks, PostWithRelations } from '@/types/database';
 import type { ApiResponse } from '@/types/api';
 
@@ -159,40 +161,40 @@ export default function SubbucksDetailPage() {
       {/* Subbucks Header */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
-              <Hash className="h-7 w-7 text-white" />
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shrink-0">
+              <Hash className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">b/{subbucks.slug}</h1>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-bold truncate">b/{subbucks.slug}</h1>
                 {subbucks.visibility === 'restricted' && (
-                  <Badge variant="secondary"><Eye className="h-3 w-3" /> Restricted</Badge>
+                  <Badge variant="secondary" className="text-xs"><Eye className="h-3 w-3" /> Restricted</Badge>
                 )}
                 {subbucks.visibility === 'private' && (
-                  <Badge variant="outline"><Lock className="h-3 w-3" /> Private</Badge>
+                  <Badge variant="outline" className="text-xs"><Lock className="h-3 w-3" /> Private</Badge>
                 )}
               </div>
-              <p className="text-muted-foreground">{subbucks.name}</p>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                {subbucks.member_count}
+              <p className="text-sm text-muted-foreground truncate">{subbucks.name}</p>
+              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {subbucks.member_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5" />
+                  {subbucks.post_count}
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                {subbucks.post_count}
-              </div>
-              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                <Link href={`/subbucks/${slug}/settings`}>
-                  <Settings className="h-4 w-4" />
-                </Link>
-              </Button>
             </div>
+            <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <Link href={`/subbucks/${slug}/settings`}>
+                <Settings className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
           {subbucks.description && (
-            <p className="mt-4 text-sm text-muted-foreground">{subbucks.description}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{subbucks.description}</p>
           )}
         </CardContent>
       </Card>

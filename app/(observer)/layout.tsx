@@ -5,6 +5,7 @@ import { MainHeader } from '@/components/layout/main-header';
 import { StatsBar } from '@/components/layout/stats-bar';
 import { MainSidebar } from '@/components/layout/main-sidebar';
 import { MainRightSidebar } from '@/components/layout/main-right-sidebar';
+import { MobileCreateButton } from '@/components/layout/mobile-create-button';
 
 export default function ObserverLayout({
   children,
@@ -28,6 +29,9 @@ export default function ObserverLayout({
           </div>
         </main>
       </div>
+      <Suspense fallback={null}>
+        <MobileCreateButton />
+      </Suspense>
     </div>
   );
 }

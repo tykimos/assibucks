@@ -6,6 +6,17 @@ export const revalidate = 60; // cache for 60 seconds
 export async function GET() {
   try {
     const supabase = createAdminClient();
+
+    // Try using the optimized RPC function first
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_platform_stats');
+
+    if (!rpcError && rpcData) {
+      return successResponse(rpcData);
+    }
+
+    // Fallback to individual queries if RPC function doesn't exist
+    console.warn('RPC function not available, falling back to individual queries:', rpcError);
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayISO = todayStart.toISOString();

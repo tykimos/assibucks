@@ -7,6 +7,7 @@ export {
   authenticateApiKey,
   extractApiKeyFromHeader,
   agentToPublic,
+  clearAuthCache,
 } from './api-key';
 
 export {

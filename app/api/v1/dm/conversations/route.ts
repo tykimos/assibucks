@@ -141,13 +141,6 @@ export async function POST(request: NextRequest) {
     } else {
       q1 = q1.eq('participant2_observer_id', resolvedRecipientId).is('participant2_agent_id', null);
     }
-    const { data: conv1 } = await q1.maybeSingle();
-
-    if (conv1) {
-      // Fetch participant details
-      const conversation = await enrichConversationForCaller(supabase, conv1, caller);
-      return successResponse({ conversation });
-    }
 
     // Query 2: caller=p2, recipient=p1
     let q2 = supabase.from('dm_conversations').select('*');
@@ -161,7 +154,18 @@ export async function POST(request: NextRequest) {
     } else {
       q2 = q2.eq('participant2_observer_id', caller.observerId!).is('participant2_agent_id', null);
     }
-    const { data: conv2 } = await q2.maybeSingle();
+
+    // Parallelize both conversation checks
+    const [{ data: conv1 }, { data: conv2 }] = await Promise.all([
+      q1.maybeSingle(),
+      q2.maybeSingle(),
+    ]);
+
+    if (conv1) {
+      // Fetch participant details
+      const conversation = await enrichConversationForCaller(supabase, conv1, caller);
+      return successResponse({ conversation });
+    }
 
     if (conv2) {
       // Fetch participant details
@@ -309,31 +313,91 @@ export async function GET(request: NextRequest) {
       return internalErrorResponse('Failed to fetch conversations');
     }
 
-    // Enrich each conversation with participant profiles and unread count
-    const enrichedConversations = await Promise.all(
-      (conversations || []).map(async (conv: any) => {
-        const enriched = await enrichConversationForCaller(supabase, conv, caller);
+    // Batch-fetch all read statuses in one query
+    const conversationIds = (conversations || []).map((conv: any) => conv.id);
+    let readStatusQuery = supabase
+      .from('dm_read_status')
+      .select('conversation_id, unread_count')
+      .in('conversation_id', conversationIds);
 
-        // Get unread count for caller
-        let readStatusQuery = supabase
-          .from('dm_read_status')
-          .select('unread_count')
-          .eq('conversation_id', conv.id);
+    if (caller.type === 'agent') {
+      readStatusQuery = readStatusQuery.eq('agent_id', caller.agentId!);
+    } else {
+      readStatusQuery = readStatusQuery.eq('observer_id', caller.observerId!);
+    }
 
-        if (caller.type === 'agent') {
-          readStatusQuery = readStatusQuery.eq('agent_id', caller.agentId!);
+    const { data: readStatuses } = await readStatusQuery;
+    const readStatusMap = new Map<string, number>();
+    (readStatuses || []).forEach((rs: any) => {
+      readStatusMap.set(rs.conversation_id, rs.unread_count);
+    });
+
+    // Collect all unique agent_ids and observer_ids for batch lookup
+    const agentIds = new Set<string>();
+    const observerIds = new Set<string>();
+
+    (conversations || []).forEach((conv: any) => {
+      // Determine which participant is "other"
+      let otherAgentId: string | null = null;
+      let otherObserverId: string | null = null;
+
+      if (caller.type === 'agent') {
+        if (conv.participant1_agent_id === caller.agentId) {
+          otherAgentId = conv.participant2_agent_id;
+          otherObserverId = conv.participant2_observer_id;
         } else {
-          readStatusQuery = readStatusQuery.eq('observer_id', caller.observerId!);
+          otherAgentId = conv.participant1_agent_id;
+          otherObserverId = conv.participant1_observer_id;
         }
+      } else {
+        if (conv.participant1_observer_id === caller.observerId) {
+          otherAgentId = conv.participant2_agent_id;
+          otherObserverId = conv.participant2_observer_id;
+        } else {
+          otherAgentId = conv.participant1_agent_id;
+          otherObserverId = conv.participant1_observer_id;
+        }
+      }
 
-        const { data: readStatus } = await readStatusQuery.maybeSingle();
+      if (otherAgentId) agentIds.add(otherAgentId);
+      if (otherObserverId) observerIds.add(otherObserverId);
+    });
 
-        return {
-          ...enriched,
-          unread_count: readStatus?.unread_count || 0,
-        };
-      })
-    );
+    // Batch-fetch all agents and observers
+    const [agentsData, observersData] = await Promise.all([
+      agentIds.size > 0
+        ? supabase
+            .from('agents')
+            .select('id, name, display_name, avatar_url')
+            .in('id', Array.from(agentIds))
+        : Promise.resolve({ data: [] }),
+      observerIds.size > 0
+        ? supabase
+            .from('observers')
+            .select('id, display_name, avatar_url')
+            .in('id', Array.from(observerIds))
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const agentsMap = new Map<string, any>();
+    (agentsData.data || []).forEach((agent: any) => {
+      agentsMap.set(agent.id, agent);
+    });
+
+    const observersMap = new Map<string, any>();
+    (observersData.data || []).forEach((observer: any) => {
+      observersMap.set(observer.id, observer);
+    });
+
+    // Enrich each conversation with participant profiles and unread count
+    const enrichedConversations = (conversations || []).map((conv: any) => {
+      const enriched = enrichConversationForCallerWithMaps(conv, caller, agentsMap, observersMap);
+
+      return {
+        ...enriched,
+        unread_count: readStatusMap.get(conv.id) || 0,
+      };
+    });
 
     return successResponse(
       {
@@ -397,6 +461,66 @@ async function enrichConversationForCaller(supabase: any, conversation: any, cal
       .select('id, display_name, avatar_url')
       .eq('id', otherObserverId)
       .single();
+    if (observer) {
+      other_participant = { type: 'human', id: observer.id, display_name: observer.display_name, avatar_url: observer.avatar_url };
+    }
+  }
+
+  return {
+    id: conversation.id,
+    other_participant,
+    last_message: conversation.last_message_at ? {
+      content: conversation.last_message_preview || '',
+      created_at: conversation.last_message_at,
+    } : undefined,
+    status: conversation.is_accepted ? 'accepted' : 'pending',
+    created_at: conversation.created_at,
+  };
+}
+
+// Batch variant of enrichConversationForCaller using pre-fetched maps
+function enrichConversationForCallerWithMaps(
+  conversation: any,
+  caller: CallerIdentity,
+  agentsMap: Map<string, any>,
+  observersMap: Map<string, any>
+) {
+  // Determine which participant is "other"
+  let otherType: string;
+  let otherAgentId: string | null = null;
+  let otherObserverId: string | null = null;
+
+  if (caller.type === 'agent') {
+    if (conversation.participant1_agent_id === caller.agentId) {
+      otherType = conversation.participant2_type;
+      otherAgentId = conversation.participant2_agent_id;
+      otherObserverId = conversation.participant2_observer_id;
+    } else {
+      otherType = conversation.participant1_type;
+      otherAgentId = conversation.participant1_agent_id;
+      otherObserverId = conversation.participant1_observer_id;
+    }
+  } else {
+    if (conversation.participant1_observer_id === caller.observerId) {
+      otherType = conversation.participant2_type;
+      otherAgentId = conversation.participant2_agent_id;
+      otherObserverId = conversation.participant2_observer_id;
+    } else {
+      otherType = conversation.participant1_type;
+      otherAgentId = conversation.participant1_agent_id;
+      otherObserverId = conversation.participant1_observer_id;
+    }
+  }
+
+  let other_participant: any = { type: otherType, id: otherAgentId || otherObserverId || 'unknown', display_name: 'Unknown User' };
+
+  if (otherType === 'agent' && otherAgentId) {
+    const agent = agentsMap.get(otherAgentId);
+    if (agent) {
+      other_participant = { type: 'agent', id: agent.id, name: agent.name, display_name: agent.display_name, avatar_url: agent.avatar_url };
+    }
+  } else if (otherObserverId) {
+    const observer = observersMap.get(otherObserverId);
     if (observer) {
       other_participant = { type: 'human', id: observer.id, display_name: observer.display_name, avatar_url: observer.avatar_url };
     }

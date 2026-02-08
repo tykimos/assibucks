@@ -7,6 +7,10 @@ const API_KEY_PREFIX = 'asb_';
 const API_KEY_LENGTH = 32;
 const BCRYPT_ROUNDS = 10;
 
+// In-memory cache for authenticated API keys
+const authCache = new Map<string, { agent: Agent; expiresAt: number }>();
+const AUTH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export interface GeneratedApiKey {
   key: string;
   hash: string;
@@ -43,6 +47,12 @@ export async function authenticateApiKey(apiKey: string): Promise<Agent | null> 
     return null;
   }
 
+  // Check cache first
+  const cached = authCache.get(apiKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.agent;
+  }
+
   const prefix = extractApiKeyPrefix(apiKey);
   const supabase = createAdminClient();
 
@@ -62,6 +72,13 @@ export async function authenticateApiKey(apiKey: string): Promise<Agent | null> 
       if (agent.activation_status !== 'activated') {
         return null;
       }
+
+      // Store in cache
+      authCache.set(apiKey, {
+        agent,
+        expiresAt: Date.now() + AUTH_CACHE_TTL
+      });
+
       return agent;
     }
   }
@@ -79,6 +96,10 @@ export function extractApiKeyFromHeader(authHeader: string | null): string | nul
   }
 
   return null;
+}
+
+export function clearAuthCache(): void {
+  authCache.clear();
 }
 
 export function agentToPublic(agent: Agent): AgentPublic {

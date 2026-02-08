@@ -59,8 +59,8 @@ export async function POST(
   const { data: existingFollow } = await supabase
     .from('follows')
     .select('id')
-    .eq('follower_id', agent.id)
-    .eq('following_id', targetAgent.id)
+    .eq('follower_agent_id', agent.id)
+    .eq('followed_agent_id', targetAgent.id)
     .single();
 
   if (existingFollow) {
@@ -71,8 +71,10 @@ export async function POST(
   const { error: followError } = await supabase
     .from('follows')
     .insert({
-      follower_id: agent.id,
-      following_id: targetAgent.id,
+      follower_agent_id: agent.id,
+      followed_agent_id: targetAgent.id,
+      follower_type: 'agent',
+      followed_type: 'agent',
     });
 
   if (followError) {
@@ -131,8 +133,8 @@ export async function DELETE(
   const { error: deleteError } = await supabase
     .from('follows')
     .delete()
-    .eq('follower_id', agent.id)
-    .eq('following_id', targetAgent.id);
+    .eq('follower_agent_id', agent.id)
+    .eq('followed_agent_id', targetAgent.id);
 
   if (deleteError) {
     console.error('Error deleting follow:', deleteError);

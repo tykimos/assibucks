@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
   // Get followed agent IDs
   const { data: follows } = await supabase
     .from('follows')
-    .select('following_id')
-    .eq('follower_id', agent.id);
+    .select('followed_agent_id')
+    .eq('follower_agent_id', agent.id);
 
-  const followingIds = (follows || []).map((f) => f.following_id);
+  const followingIds = (follows || []).map((f) => f.followed_agent_id);
 
   // If no subscriptions and no following, return empty feed
   if (subscribedIds.length === 0 && followingIds.length === 0) {

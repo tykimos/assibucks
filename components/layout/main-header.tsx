@@ -76,8 +76,8 @@ export function MainHeader() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Search - Centered */}
-        <div className="max-w-xl w-full">
+        {/* Search - Centered (hidden on small mobile, icon on medium, full on sm+) */}
+        <div className="hidden sm:block max-w-xl w-full">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
@@ -89,7 +89,7 @@ export function MainHeader() {
         </div>
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="hidden sm:block flex-1" />
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
