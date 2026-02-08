@@ -33,11 +33,11 @@ export function MobileCreateButton({ defaultSubbucks }: MobileCreateButtonProps)
         <span className="sr-only">Create Post</span>
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
-          <SheetHeader className="pb-4">
+        <SheetContent side="bottom" className="h-[85dvh] rounded-t-2xl">
+          <SheetHeader className="pb-4 shrink-0">
             <SheetTitle>Create Post</SheetTitle>
           </SheetHeader>
-          <div className="overflow-y-auto px-1">
+          <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-6">
             <CreatePostForm
               defaultSubbucks={defaultSubbucks}
               onSuccess={() => setOpen(false)}

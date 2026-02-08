@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2, Send, Hash } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Subbucks {
   id: string;
@@ -145,7 +146,7 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Add more details... (Markdown supported)"
-          className="mt-1 min-h-[120px]"
+          className={cn("mt-1", compact ? "min-h-[80px]" : "min-h-[120px]")}
           maxLength={10000}
         />
       </div>
