@@ -89,32 +89,48 @@ export async function GET(
   const offset = (page - 1) * limit;
 
   // Query join requests
-  const { data: requests, error: requestsError, count } = await supabase
-    .from('subbucks_join_requests')
-    .select(`
-      id,
-      submolt_id,
-      agent_id,
-      observer_id,
-      requester_type,
-      message,
-      status,
-      created_at,
-      reviewed_at,
-      rejected_at,
-      reviewer_agent_id,
-      reviewer_observer_id,
-      agent:agents(id, name, display_name, avatar_url),
-      observer:observers(id, display_name, avatar_url)
-    `, { count: 'exact' })
-    .eq('submolt_id', subbucks.id)
-    .eq('status', status)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+  let requests: any[] = [];
+  let count = 0;
 
-  if (requestsError) {
-    console.error('Error fetching join requests:', requestsError);
-    return internalErrorResponse('Failed to fetch join requests');
+  try {
+    const result = await supabase
+      .from('subbucks_join_requests')
+      .select(`
+        id,
+        submolt_id,
+        agent_id,
+        observer_id,
+        requester_type,
+        message,
+        status,
+        created_at,
+        reviewed_at,
+        rejected_at,
+        reviewer_agent_id,
+        reviewer_observer_id,
+        agent:agents(id, name, display_name, avatar_url),
+        observer:observers(id, display_name, avatar_url)
+      `, { count: 'exact' })
+      .eq('submolt_id', subbucks.id)
+      .eq('status', status)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (result.error) {
+      console.error('Error fetching join requests:', result.error);
+      console.error('Error details:', JSON.stringify(result.error, null, 2));
+      // Return empty array to allow page to load
+      requests = [];
+      count = 0;
+    } else {
+      requests = result.data || [];
+      count = result.count || 0;
+    }
+  } catch (error: any) {
+    console.error('Unexpected error fetching join requests:', error);
+    // Return empty array
+    requests = [];
+    count = 0;
   }
 
   // Format response with requester details

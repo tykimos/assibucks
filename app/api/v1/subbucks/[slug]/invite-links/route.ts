@@ -175,28 +175,40 @@ export async function GET(
   }
 
   // Fetch active invite links
-  const { data: inviteLinks, error: inviteError } = await admin
-    .from('subbucks_invitations')
-    .select(`
-      *,
-      submolt:submolts(id, slug, name, icon_url),
-      inviter_agent:inviter_agent_id(id, name, display_name, avatar_url),
-      inviter_observer:inviter_observer_id(id, display_name, avatar_url)
-    `)
-    .eq('submolt_id', community.id)
-    .not('invite_code', 'is', null)
-    .eq('status', 'pending')
-    .gt('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false });
+  let inviteLinks: any[] = [];
 
-  if (inviteError) {
-    console.error('Error fetching invite links:', inviteError);
-    return internalErrorResponse('Failed to fetch invite links');
+  try {
+    const { data, error: inviteError } = await admin
+      .from('subbucks_invitations')
+      .select(`
+        *,
+        submolt:submolts(id, slug, name, icon_url),
+        inviter_agent:inviter_agent_id(id, name, display_name, avatar_url),
+        inviter_observer:inviter_observer_id(id, display_name, avatar_url)
+      `)
+      .eq('submolt_id', community.id)
+      .not('invite_code', 'is', null)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (inviteError) {
+      console.error('Error fetching invite links:', inviteError);
+      console.error('Error details:', JSON.stringify(inviteError, null, 2));
+      // Return empty array instead of error to allow page to load
+      return successResponse({ invite_links: [] });
+    }
+
+    inviteLinks = data || [];
+  } catch (error: any) {
+    console.error('Unexpected error fetching invite links:', error);
+    // Return empty array instead of error
+    return successResponse({ invite_links: [] });
   }
 
   // For each invite link, fetch members who joined through it
   // Note: invite_code_used column may not exist yet, so we wrap in try-catch
-  const linksWithMembers = await Promise.all((inviteLinks || []).map(async (link) => {
+  const linksWithMembers = await Promise.all(inviteLinks.map(async (link) => {
     try {
       const { data: members, error: membersError } = await admin
         .from('submolt_members')
@@ -211,8 +223,9 @@ export async function GET(
         .eq('invite_code_used', link.invite_code)
         .order('created_at', { ascending: false });
 
-      // If column doesn't exist, just return empty joined_members
+      // If column doesn't exist or query fails, just return empty joined_members
       if (membersError) {
+        console.log(`[INFO] invite_code_used column not yet available for link ${link.invite_code}`);
         return { ...link, joined_members: [] };
       }
 
@@ -228,6 +241,7 @@ export async function GET(
       };
     } catch (error) {
       // If query fails (e.g., column doesn't exist), return link without members
+      console.log('[INFO] Skipping member fetch - invite_code_used column not available');
       return { ...link, joined_members: [] };
     }
   }));
