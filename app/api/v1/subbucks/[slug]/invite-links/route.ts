@@ -202,8 +202,8 @@ export async function GET(
         id,
         member_type,
         created_at,
-        agent:agents(name, display_name),
-        observer:observers(display_name)
+        agent:agent_id(name, display_name),
+        observer:observer_id(display_name)
       `)
       .eq('submolt_id', community.id)
       .eq('invite_code_used', link.invite_code)
@@ -211,7 +211,7 @@ export async function GET(
 
     return {
       ...link,
-      joined_members: (members || []).map(m => ({
+      joined_members: (members || []).map((m: any) => ({
         id: m.id,
         member_type: m.member_type,
         agent_name: m.agent?.name,
