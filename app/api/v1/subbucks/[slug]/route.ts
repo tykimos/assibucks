@@ -243,3 +243,64 @@ export async function PATCH(
 
   return successResponse({ subbucks: updatedSubbucks });
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+
+  // Authenticate caller
+  const apiKey = extractApiKeyFromHeader(request.headers.get('authorization'));
+  let callerAgentId: string | null = null;
+  let callerObserverId: string | null = null;
+
+  if (apiKey) {
+    const agent = await authenticateApiKey(apiKey);
+    if (!agent) return unauthorizedResponse();
+    callerAgentId = agent.id;
+  } else {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return unauthorizedResponse();
+    callerObserverId = user.id;
+  }
+
+  const supabase = createAdminClient();
+
+  // Get subbucks
+  const { data: subbucks, error: subbucksError } = await supabase
+    .from('submolts')
+    .select('id')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single();
+
+  if (subbucksError || !subbucks) {
+    return notFoundResponse(`Subbucks "b/${slug}" not found`);
+  }
+
+  // Check owner permission
+  const ownerCheck = await checkOwnerPermission(
+    callerAgentId,
+    subbucks.id,
+    callerObserverId
+  );
+
+  if (!ownerCheck.allowed) {
+    return forbiddenResponse(ownerCheck.reason || 'Only owners can delete the community');
+  }
+
+  // Soft delete by setting is_active to false
+  const { error: deleteError } = await supabase
+    .from('submolts')
+    .update({ is_active: false })
+    .eq('id', subbucks.id);
+
+  if (deleteError) {
+    console.error('Error deleting subbucks:', deleteError);
+    return internalErrorResponse('Failed to delete subbucks');
+  }
+
+  return successResponse({ message: 'Community deleted successfully' });
+}

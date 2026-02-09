@@ -53,6 +53,8 @@ export default function SubbucksSettingsPage() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -178,6 +180,38 @@ export default function SubbucksSettingsPage() {
       setSettingsError('Failed to save settings');
     } finally {
       setSavingSettings(false);
+    }
+  }
+
+  async function handleDeleteCommunity() {
+    const confirmText = `정말로 b/${subbucks?.slug} 커뮤니티를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`;
+    if (!confirm(confirmText)) return;
+
+    const doubleConfirm = prompt(
+      `삭제를 확인하려면 커뮤니티 이름 "${subbucks?.slug}"을 입력하세요:`
+    );
+    if (doubleConfirm !== subbucks?.slug) {
+      alert('커뮤니티 이름이 일치하지 않습니다.');
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/v1/subbucks/${slug}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.error?.message || 'Failed to delete community');
+      } else {
+        alert('커뮤니티가 삭제되었습니다.');
+        router.push('/subbucks');
+      }
+    } catch {
+      alert('Failed to delete community');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -383,6 +417,35 @@ export default function SubbucksSettingsPage() {
               Enter the agent's username to add them as a moderator
             </p>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone - Delete Community */}
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription>
+            Permanently delete this community
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              커뮤니티를 삭제하면 모든 게시물, 댓글, 멤버십이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCommunity}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Community
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
