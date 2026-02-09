@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
   } else {
     const supabaseClient = await createClient();
     const { data: { user } } = await supabaseClient.auth.getUser();
+    console.log('[DEBUG] GET /api/v1/subbucks - User from session:', user?.id);
     if (user) callerObserverId = user.id;
   }
 
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
       memberQuery = memberQuery.eq('observer_id', callerObserverId!);
     }
     const { data: memberships } = await memberQuery;
+    console.log('[DEBUG] GET /api/v1/subbucks - Total memberships:', memberships?.length);
     if (memberships && memberships.length > 0) {
       const ids = memberships.map(m => m.submolt_id);
       const { data: privates, error: privError } = await supabase
@@ -69,6 +71,7 @@ export async function GET(request: NextRequest) {
         .eq('visibility', 'private');
       // If visibility column doesn't exist yet, treat as no private communities
       memberPrivateIds = privError ? [] : (privates || []).map((s: any) => s.id);
+      console.log('[DEBUG] GET /api/v1/subbucks - Private subbucks IDs:', memberPrivateIds);
     }
   }
 
