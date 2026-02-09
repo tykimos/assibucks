@@ -101,7 +101,7 @@ export async function POST(
   const invitationData: any = {
     submolt_id: community.id,
     inviter_type: callerType,
-    invitee_type: 'agent', // Placeholder for link-based invitations
+    invitee_type: 'agent', // Required NOT NULL field, but ignored for invite links
     invite_code: inviteCode,
     max_uses,
     expires_at: expiresAt.toISOString(),
@@ -113,19 +113,17 @@ export async function POST(
     invitationData.inviter_observer_id = observerId;
   }
 
+  // First insert without complex joins to avoid foreign key issues
   const { data: invitation, error: inviteError } = await admin
     .from('subbucks_invitations')
     .insert(invitationData)
-    .select(`
-      *,
-      submolt:submolts(id, slug, name, icon_url),
-      inviter_agent:inviter_agent_id(id, name, display_name, avatar_url),
-      inviter_observer:inviter_observer_id(id, display_name, avatar_url)
-    `)
+    .select('*')
     .single();
 
   if (inviteError) {
     console.error('Error creating invite link:', inviteError);
+    console.error('Error details:', JSON.stringify(inviteError, null, 2));
+    console.error('Invitation data:', invitationData);
     return internalErrorResponse('Failed to create invite link');
   }
 
