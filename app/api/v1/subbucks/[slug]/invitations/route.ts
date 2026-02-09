@@ -276,20 +276,26 @@ export async function GET(
     query = query.eq('status', status);
   }
 
-  const { data: invitations, error: inviteError, count } = await query;
+  try {
+    const { data: invitations, error: inviteError, count } = await query;
 
-  if (inviteError) {
-    console.error('Error fetching invitations:', inviteError);
-    return internalErrorResponse('Failed to fetch invitations');
-  }
-
-  return successResponse(
-    { invitations: invitations || [] },
-    {
-      page,
-      limit,
-      total: count || 0,
-      has_more: (count || 0) > offset + limit,
+    if (inviteError) {
+      console.error('Error fetching invitations:', inviteError);
+      console.error('Error details:', JSON.stringify(inviteError, null, 2));
+      return internalErrorResponse(`Failed to fetch invitations: ${inviteError.message}`);
     }
-  );
+
+    return successResponse(
+      { invitations: invitations || [] },
+      {
+        page,
+        limit,
+        total: count || 0,
+        has_more: (count || 0) > offset + limit,
+      }
+    );
+  } catch (error: any) {
+    console.error('Unexpected error fetching invitations:', error);
+    return internalErrorResponse(error.message || 'Failed to fetch invitations');
+  }
 }

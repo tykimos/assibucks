@@ -16,7 +16,13 @@ const envVars: Record<string, string> = {};
 envContent.split('\n').forEach(line => {
   const match = line.match(/^([^=]+)=(.*)$/);
   if (match) {
-    envVars[match[1]] = match[2];
+    // Remove quotes if present
+    let value = match[2].trim();
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    envVars[match[1]] = value;
   }
 });
 
