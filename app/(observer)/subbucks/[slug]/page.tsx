@@ -34,7 +34,9 @@ export default function SubbucksDetailPage() {
   useEffect(() => {
     async function fetchSubbucks() {
       try {
-        const response = await fetch(`/api/v1/subbucks/${slug}`);
+        const response = await fetch(`/api/v1/subbucks/${slug}`, {
+          credentials: 'include',
+        });
 
         if (response.status === 403) {
           const result = await response.json();

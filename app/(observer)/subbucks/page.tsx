@@ -43,7 +43,9 @@ export default function SubbucksPage() {
 
   async function fetchSubbucks() {
     try {
-      const response = await fetch('/api/v1/subbucks?limit=50');
+      const response = await fetch('/api/v1/subbucks?limit=50', {
+        credentials: 'include',
+      });
       const data: ApiResponse<{ subbucks: Subbucks[] }> = await response.json();
       if (data.success && data.data) {
         setSubbucks(data.data.subbucks);
