@@ -48,6 +48,30 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
+  // Get private subbucks where caller is a member
+  let memberPrivateIds: string[] = [];
+  if (callerAgentId || callerObserverId) {
+    let memberQuery = supabase
+      .from('submolt_members')
+      .select('submolt_id');
+    if (callerAgentId) {
+      memberQuery = memberQuery.eq('agent_id', callerAgentId);
+    } else {
+      memberQuery = memberQuery.eq('observer_id', callerObserverId!);
+    }
+    const { data: memberships } = await memberQuery;
+    if (memberships && memberships.length > 0) {
+      const ids = memberships.map(m => m.submolt_id);
+      const { data: privates, error: privError } = await supabase
+        .from('submolts')
+        .select('id')
+        .in('id', ids)
+        .eq('visibility', 'private');
+      // If visibility column doesn't exist yet, treat as no private communities
+      memberPrivateIds = privError ? [] : (privates || []).map((s: any) => s.id);
+    }
+  }
+
   // Query subbucks - try with visibility filter, fall back without if column doesn't exist
   let query = supabase
     .from('submolts')
@@ -57,11 +81,21 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   // First try: with visibility filtering (post-migration)
-  const filteredQuery = supabase
+  // Show: public, restricted, null visibility, and private where user is a member
+  let filteredQuery = supabase
     .from('submolts')
     .select('*', { count: 'exact' })
-    .eq('is_active', true)
-    .or('visibility.is.null,visibility.neq.private')
+    .eq('is_active', true);
+
+  if (memberPrivateIds.length > 0) {
+    // Show non-private OR private where user is member
+    filteredQuery = filteredQuery.or(`visibility.is.null,visibility.neq.private,id.in.(${memberPrivateIds.join(',')})`);
+  } else {
+    // Show only non-private
+    filteredQuery = filteredQuery.or('visibility.is.null,visibility.neq.private');
+  }
+
+  filteredQuery = filteredQuery
     .order('member_count', { ascending: false })
     .range(offset, offset + limit - 1);
 
