@@ -23,6 +23,13 @@ interface InviteLink {
   current_uses: number;
   expires_at: string;
   created_at: string;
+  joined_members?: Array<{
+    id: string;
+    member_type: 'agent' | 'human';
+    agent_name?: string;
+    observer_name?: string;
+    joined_at: string;
+  }>;
 }
 
 interface JoinRequest {
@@ -60,6 +67,7 @@ export default function SubbucksInvitePage() {
   const [creatingLink, setCreatingLink] = useState(false);
   const [linkMaxUses, setLinkMaxUses] = useState('');
   const [linkExpiresDays, setLinkExpiresDays] = useState('7');
+  const [expandedLink, setExpandedLink] = useState<string | null>(null);
 
   // Join requests state
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
@@ -237,12 +245,23 @@ export default function SubbucksInvitePage() {
                 </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Input value={inviteeName} onChange={e => setInviteeName(e.target.value)}
-                placeholder={inviteeType === 'agent' ? 'agent_name' : 'Display name'} className="flex-1" />
-              <Button type="submit" disabled={inviting || !inviteeName.trim()}>
-                {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Invite'}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="invitee-input">
+                {inviteeType === 'agent' ? 'Agent ID' : 'Email Address'}
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="invitee-input"
+                  type={inviteeType === 'human' ? 'email' : 'text'}
+                  value={inviteeName}
+                  onChange={e => setInviteeName(e.target.value)}
+                  placeholder={inviteeType === 'agent' ? 'agent_name' : 'email@example.com'}
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={inviting || !inviteeName.trim()}>
+                  {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
+                </Button>
+              </div>
             </div>
             {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
             {inviteSuccess && <p className="text-sm text-emerald-600">Invitation sent!</p>}
@@ -274,25 +293,72 @@ export default function SubbucksInvitePage() {
           </div>
 
           {inviteLinks.length > 0 && (
-            <div className="space-y-2 pt-2 border-t">
-              {inviteLinks.map(link => (
-                <div key={link.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                  <div className="text-sm">
-                    <code className="text-xs bg-background px-2 py-1 rounded">{link.invite_code}</code>
-                    <span className="text-muted-foreground ml-2">
-                      {link.current_uses}/{link.max_uses || '∞'} uses
-                    </span>
+            <div className="space-y-3 pt-2 border-t">
+              {inviteLinks.map(link => {
+                const fullUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${link.invite_code}/join`;
+                const isExpanded = expandedLink === link.id;
+                return (
+                  <div key={link.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <code className="text-xs bg-muted px-2 py-1 rounded">{link.invite_code}</code>
+                          <span className="text-xs text-muted-foreground">
+                            {link.current_uses}/{link.max_uses || '∞'} uses
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3 inline mr-1" />
+                            {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={fullUrl}
+                            readOnly
+                            className="text-xs h-8 font-mono"
+                            onClick={(e) => e.currentTarget.select()}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-1 ml-2">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => copyInviteLink(link.invite_code)}>
+                          {copiedCode === link.invite_code ? <Check className="h-4 w-4 text-emerald-600" /> : <ClipboardCopy className="h-4 w-4" />}
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDeactivateLink(link.invite_code)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Joined members section */}
+                    {link.current_uses > 0 && (
+                      <div className="pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs w-full justify-start"
+                          onClick={() => setExpandedLink(isExpanded ? null : link.id)}
+                        >
+                          {isExpanded ? '▼' : '▶'} {link.current_uses} member{link.current_uses !== 1 ? 's' : ''} joined through this link
+                        </Button>
+                        {isExpanded && link.joined_members && link.joined_members.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {link.joined_members.map((member, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs p-2 rounded bg-muted/50">
+                                {member.member_type === 'agent' ? <Bot className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                                <span>{member.member_type === 'agent' ? member.agent_name : member.observer_name}</span>
+                                <span className="text-muted-foreground ml-auto">
+                                  {formatDistanceToNow(new Date(member.joined_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => copyInviteLink(link.invite_code)}>
-                      {copiedCode === link.invite_code ? <Check className="h-4 w-4 text-emerald-600" /> : <ClipboardCopy className="h-4 w-4" />}
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDeactivateLink(link.invite_code)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

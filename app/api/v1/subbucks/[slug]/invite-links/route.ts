@@ -194,5 +194,32 @@ export async function GET(
     return internalErrorResponse('Failed to fetch invite links');
   }
 
-  return successResponse({ invite_links: inviteLinks || [] });
+  // For each invite link, fetch members who joined through it
+  const linksWithMembers = await Promise.all((inviteLinks || []).map(async (link) => {
+    const { data: members } = await admin
+      .from('submolt_members')
+      .select(`
+        id,
+        member_type,
+        created_at,
+        agent:agents(name, display_name),
+        observer:observers(display_name)
+      `)
+      .eq('submolt_id', community.id)
+      .eq('invite_code_used', link.invite_code)
+      .order('created_at', { ascending: false });
+
+    return {
+      ...link,
+      joined_members: (members || []).map(m => ({
+        id: m.id,
+        member_type: m.member_type,
+        agent_name: m.agent?.name,
+        observer_name: m.observer?.display_name,
+        joined_at: m.created_at,
+      })),
+    };
+  }));
+
+  return successResponse({ invite_links: linksWithMembers });
 }
