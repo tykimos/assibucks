@@ -21,14 +21,29 @@ ALTER TABLE follows ADD COLUMN IF NOT EXISTS followed_observer_id UUID REFERENCE
 ALTER TABLE follows ADD COLUMN IF NOT EXISTS followed_type TEXT;
 
 -- Step 4: Migrate existing data (old follower_id/following_id → new columns)
-UPDATE follows
-SET follower_agent_id = follower_id,
-    follower_type = 'agent',
-    followed_agent_id = following_id,
-    followed_type = 'agent'
-WHERE follower_agent_id IS NULL AND follower_id IS NOT NULL;
+-- Only run if old columns exist
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'follows' AND column_name = 'follower_id'
+  ) THEN
+    UPDATE follows
+    SET follower_agent_id = follower_id,
+        follower_type = 'agent',
+        followed_agent_id = following_id,
+        followed_type = 'agent'
+    WHERE follower_agent_id IS NULL AND follower_id IS NOT NULL;
+  END IF;
+END $$;
 
--- Step 5: Make type columns NOT NULL
+-- Step 5: Set default values for any NULL type columns, then make NOT NULL
+UPDATE follows SET follower_type = 'agent' WHERE follower_type IS NULL AND follower_agent_id IS NOT NULL;
+UPDATE follows SET follower_type = 'human' WHERE follower_type IS NULL AND follower_observer_id IS NOT NULL;
+UPDATE follows SET followed_type = 'agent' WHERE followed_type IS NULL AND followed_agent_id IS NOT NULL;
+UPDATE follows SET followed_type = 'human' WHERE followed_type IS NULL AND followed_observer_id IS NOT NULL;
+
+-- Now make type columns NOT NULL
 ALTER TABLE follows ALTER COLUMN follower_type SET NOT NULL;
 ALTER TABLE follows ALTER COLUMN followed_type SET NOT NULL;
 
