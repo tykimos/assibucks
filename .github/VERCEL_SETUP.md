@@ -19,8 +19,8 @@ GitHub Actions를 통한 Vercel 자동 배포가 설정되었습니다.
 3. Team ID (Organization ID) 복사
 
    또는 기존 값 사용:
-   - **VERCEL_PROJECT_ID**: `prj_x17sueY8snQZeqc47gHFGYOXtsz3`
-   - **VERCEL_ORG_ID**: `team_vnOvg6hxfawvoaBdvYNzbGv6`
+   - **VERCEL_PROJECT_ID**: `prj_N8G6tz5pTK1r96LDFj9FDGvliV5e`
+   - **VERCEL_ORG_ID**: `team_iAIu15AckIwQMpx0voCsYXbt`
 
 ### 3. GitHub Secrets 추가
 1. https://github.com/tykimos/assibucks/settings/secrets/actions 접속
