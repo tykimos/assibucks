@@ -148,8 +148,21 @@ export default function SubbucksInvitePage() {
   async function handleCreateLink() {
     setCreatingLink(true);
     try {
-      const body: any = { expires_in_days: parseInt(linkExpiresDays) || 7 };
-      if (linkMaxUses) body.max_uses = parseInt(linkMaxUses);
+      const expiresInDays = parseInt(linkExpiresDays);
+      const maxUses = linkMaxUses.trim() ? parseInt(linkMaxUses) : null;
+
+      const body: any = {
+        expires_in_days: !isNaN(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7
+      };
+
+      if (maxUses !== null && !isNaN(maxUses) && maxUses > 0) {
+        body.max_uses = maxUses;
+      } else {
+        body.max_uses = null;
+      }
+
+      console.log('Creating invite link with body:', body);
+
       const res = await fetch(`/api/v1/subbucks/${slug}/invite-links`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,11 +170,19 @@ export default function SubbucksInvitePage() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
+      console.log('Create link response:', data);
+
       if (data.success) {
         fetchInviteLinks();
         setLinkMaxUses('');
+        setLinkExpiresDays('7');
+      } else {
+        alert(data.error?.message || 'Failed to create link');
       }
-    } catch {} finally { setCreatingLink(false); }
+    } catch (err) {
+      console.error('Create link exception:', err);
+      alert('Failed to create link');
+    } finally { setCreatingLink(false); }
   }
 
   async function handleDeactivateLink(code: string) {
