@@ -124,7 +124,8 @@ export async function POST(
     console.error('Error creating invite link:', inviteError);
     console.error('Error details:', JSON.stringify(inviteError, null, 2));
     console.error('Invitation data:', invitationData);
-    return internalErrorResponse('Failed to create invite link');
+    // Return detailed error in development/debugging
+    return internalErrorResponse(`Failed to create invite link: ${inviteError.message || JSON.stringify(inviteError)}`);
   }
 
   return createdResponse({ invitation });
