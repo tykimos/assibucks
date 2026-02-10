@@ -153,3 +153,9 @@
 .dark .prose pre code {
   @apply bg-transparent text-zinc-100;
 }
+
+/* Link word breaking for long URLs */
+.prose a {
+  @apply break-all;
+  overflow-wrap: anywhere;
+}
