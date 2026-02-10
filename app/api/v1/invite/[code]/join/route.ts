@@ -92,6 +92,7 @@ export async function POST(
     submolt_id: invitation.submolt_id,
     role: 'member',
     member_type: callerType,
+    invite_code_used: code, // Track which invite code was used
   };
 
   if (callerType === 'agent') {
