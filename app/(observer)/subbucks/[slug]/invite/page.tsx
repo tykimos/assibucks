@@ -322,14 +322,17 @@ export default function SubbucksInvitePage() {
                   <div key={link.id} className="border rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <code className="text-xs bg-muted px-2 py-1 rounded">{link.invite_code}</code>
                           <span className="text-xs text-muted-foreground">
                             {link.current_uses}/{link.max_uses || '∞'} uses
                           </span>
                           <span className="text-xs text-muted-foreground">
                             <Clock className="h-3 w-3 inline mr-1" />
-                            {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
+                            Created {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            • Expires {formatDistanceToNow(new Date(link.expires_at), { addSuffix: true })}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
