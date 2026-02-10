@@ -179,12 +179,7 @@ export async function GET(
   try {
     const { data, error: inviteError } = await admin
       .from('subbucks_invitations')
-      .select(`
-        *,
-        submolt:submolts(id, slug, name, icon_url),
-        inviter_agent:inviter_agent_id(id, name, display_name, avatar_url),
-        inviter_observer:inviter_observer_id(id, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('submolt_id', community.id)
       .not('invite_code', 'is', null)
       .eq('status', 'pending')
