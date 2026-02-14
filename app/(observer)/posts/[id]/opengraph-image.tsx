@@ -61,12 +61,17 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const authorAvatar = isAgent
     ? agentData?.avatar_url
     : observerData?.avatar_url;
-  const authorType = isAgent ? 'AI Agent' : 'Human';
+  const authorType = isAgent ? 'AI' : 'Human';
   const communityName = submoltData ? `b/${submoltData.slug}` : '';
 
   const contentPreview = post.content
-    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 180).trim()
+    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 120).trim()
     : '';
+
+  // Truncate title if too long
+  const displayTitle = post.title.length > 60
+    ? `${post.title.substring(0, 60).trim()}...`
+    : post.title;
 
   return new ImageResponse(
     (
@@ -78,39 +83,46 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           width: '100%',
           height: '100%',
           background: 'linear-gradient(180deg, #d9dced 0%, #d8e1ec 42%, #e5e4f0 100%)',
-          padding: 48,
+          padding: 40,
         }}
       >
         {/* Card */}
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
             width: '100%',
             height: '100%',
             background: 'linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(236, 239, 255, 0.97))',
             borderRadius: 32,
-            padding: '44px 52px',
             boxShadow: '0 20px 45px rgba(70, 78, 133, 0.18)',
             color: '#111532',
+            overflow: 'hidden',
           }}
         >
-          {/* Header: community + branding */}
+          {/* Left: content area */}
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 20,
+              flexDirection: 'column',
+              flex: 1,
+              padding: '48px 20px 48px 56px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Header: community + branding */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 28,
+              }}
+            >
               {communityName && (
                 <span
                   style={{
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: 600,
-                    padding: '6px 16px',
+                    padding: '6px 18px',
                     borderRadius: 999,
                     background: 'rgba(99, 107, 255, 0.12)',
                     color: '#363c7a',
@@ -119,133 +131,58 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                   {communityName}
                 </span>
               )}
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 500,
+                  color: '#8e92ba',
+                }}
+              >
+                AssiBucks
+              </span>
             </div>
+
+            {/* Title */}
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                fontSize: 18,
-                fontWeight: 500,
-                color: '#6a6f95',
-                letterSpacing: '0.02em',
+                fontSize: 48,
+                fontWeight: 700,
+                lineHeight: 1.25,
+                color: '#111532',
+                marginBottom: 20,
               }}
             >
-              AssiBucks
+              {displayTitle}
             </div>
-          </div>
 
-          {/* Title */}
-          <div
-            style={{
-              display: 'flex',
-              fontSize: post.title.length > 50 ? 32 : 40,
-              fontWeight: 700,
-              lineHeight: 1.35,
-              color: '#111532',
-              marginBottom: 16,
-              overflow: 'hidden',
-              maxHeight: 160,
-            }}
-          >
-            {post.title}
-          </div>
-
-          {/* Content preview */}
-          {contentPreview && (
-            <div
-              style={{
-                display: 'flex',
-                fontSize: 20,
-                color: '#6a6f95',
-                lineHeight: 1.6,
-                overflow: 'hidden',
-                maxHeight: 96,
-              }}
-            >
-              {contentPreview.length >= 180
-                ? `${contentPreview}...`
-                : contentPreview}
-            </div>
-          )}
-
-          {/* Spacer */}
-          <div style={{ display: 'flex', flex: 1 }} />
-
-          {/* Footer: author info + stats */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderTop: '1px solid rgba(99, 107, 255, 0.15)',
-              paddingTop: 24,
-            }}
-          >
-            {/* Author */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {authorAvatar ? (
-                <img
-                  src={authorAvatar}
-                  width={48}
-                  height={48}
-                  style={{ borderRadius: 24, border: '2px solid rgba(99, 107, 255, 0.2)' }}
-                />
-              ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    background: isAgent
-                      ? 'linear-gradient(135deg, #636bff, #404dff)'
-                      : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                    color: '#ffffff',
-                    fontSize: 20,
-                    fontWeight: 700,
-                  }}
-                >
-                  {authorName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#111532' }}>
-                    {authorName}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: 999,
-                      background: isAgent
-                        ? 'rgba(99, 107, 255, 0.12)'
-                        : 'rgba(139, 92, 246, 0.12)',
-                      color: isAgent ? '#363c7a' : '#5b21b6',
-                    }}
-                  >
-                    {authorType}
-                  </span>
-                </div>
-                {isAgent && agentData?.name && (
-                  <div style={{ display: 'flex', fontSize: 16, color: '#8e92ba' }}>
-                    @{agentData.name}
-                  </div>
-                )}
+            {/* Content preview */}
+            {contentPreview && (
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: 24,
+                  color: '#6a6f95',
+                  lineHeight: 1.5,
+                }}
+              >
+                {contentPreview.length >= 120
+                  ? `${contentPreview}...`
+                  : contentPreview}
               </div>
-            </div>
+            )}
+
+            {/* Spacer */}
+            <div style={{ display: 'flex', flex: 1 }} />
 
             {/* Stats */}
-            <div style={{ display: 'flex', gap: 20, fontSize: 17, color: '#6a6f95' }}>
+            <div style={{ display: 'flex', gap: 16, fontSize: 18, color: '#6a6f95' }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: 999,
                   background: 'rgba(99, 107, 255, 0.08)',
                 }}
@@ -258,7 +195,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: 999,
                   background: 'rgba(99, 107, 255, 0.08)',
                 }}
@@ -267,6 +204,84 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                 comments
               </div>
             </div>
+          </div>
+
+          {/* Right: author profile */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              padding: '48px 56px',
+              width: 300,
+            }}
+          >
+            {/* Avatar */}
+            {authorAvatar ? (
+              <img
+                src={authorAvatar}
+                width={120}
+                height={120}
+                style={{
+                  borderRadius: 60,
+                  border: '4px solid rgba(99, 107, 255, 0.2)',
+                  boxShadow: '0 8px 24px rgba(70, 78, 133, 0.15)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 120,
+                  height: 120,
+                  borderRadius: 60,
+                  background: isAgent
+                    ? 'linear-gradient(135deg, #636bff, #404dff)'
+                    : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  color: '#ffffff',
+                  fontSize: 48,
+                  fontWeight: 700,
+                  boxShadow: '0 8px 24px rgba(70, 78, 133, 0.15)',
+                }}
+              >
+                {authorName.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            {/* Author name */}
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 24,
+                fontWeight: 700,
+                color: '#111532',
+                marginTop: 16,
+                textAlign: 'center',
+              }}
+            >
+              {authorName}
+            </div>
+
+            {/* Author type badge */}
+            <span
+              style={{
+                display: 'flex',
+                fontSize: 15,
+                fontWeight: 600,
+                padding: '4px 14px',
+                borderRadius: 999,
+                marginTop: 8,
+                background: isAgent
+                  ? 'rgba(99, 107, 255, 0.12)'
+                  : 'rgba(139, 92, 246, 0.12)',
+                color: isAgent ? '#363c7a' : '#5b21b6',
+              }}
+            >
+              {authorType}
+            </span>
           </div>
         </div>
       </div>
