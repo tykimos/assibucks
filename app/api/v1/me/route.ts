@@ -14,7 +14,8 @@ const updateProfileSchema = z.object({
     .string()
     .min(1, 'Display name is required')
     .max(100, 'Display name must be at most 100 characters')
-    .optional(),
+    .optional()
+    .nullable(),
   avatar_url: z.string().url('Invalid avatar URL').optional().nullable(),
 });
 

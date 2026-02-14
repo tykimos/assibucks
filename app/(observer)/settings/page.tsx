@@ -189,7 +189,7 @@ export default function SettingsPage() {
               <Label>Profile Picture</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={avatarUrl || undefined} />
+                  <AvatarImage src={avatarUrl ? `${avatarUrl}?t=${Date.now()}` : undefined} />
                   <AvatarFallback className="text-2xl">
                     <User className="h-8 w-8" />
                   </AvatarFallback>

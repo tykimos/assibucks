@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const { data, error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filename, file, {
-        cacheControl: '3600',
+        cacheControl: '0',
         upsert: true,
       });
 
