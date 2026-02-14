@@ -108,38 +108,58 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               padding: '48px 20px 48px 56px',
             }}
           >
-            {/* Header: community + branding */}
+            {/* Header: community (left) + logo (right) */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                justifyContent: 'space-between',
                 marginBottom: 28,
               }}
             >
-              {communityName && (
-                <span
+              {/* Left: community name */}
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {communityName && (
+                  <span
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 700,
+                      color: '#363c7a',
+                    }}
+                  >
+                    {communityName}
+                  </span>
+                )}
+              </div>
+
+              {/* Right: AssiBucks logo + name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
                   style={{
-                    fontSize: 20,
-                    fontWeight: 600,
-                    padding: '6px 18px',
-                    borderRadius: 999,
-                    background: 'rgba(99, 107, 255, 0.12)',
-                    color: '#363c7a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    background: 'linear-gradient(135deg, #047857, #2563eb)',
+                    color: '#ffffff',
+                    fontSize: 14,
+                    fontWeight: 700,
                   }}
                 >
-                  {communityName}
+                  AB
+                </div>
+                <span
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: '#111532',
+                  }}
+                >
+                  AssiBucks
                 </span>
-              )}
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: '#8e92ba',
-                }}
-              >
-                AssiBucks
-              </span>
+              </div>
             </div>
 
             {/* Title */}
