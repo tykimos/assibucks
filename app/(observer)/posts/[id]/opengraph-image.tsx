@@ -37,10 +37,10 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             justifyContent: 'center',
             width: '100%',
             height: '100%',
-            backgroundColor: '#0a0a0a',
-            color: '#ffffff',
-            fontSize: 48,
-            fontFamily: 'sans-serif',
+            background: 'linear-gradient(180deg, #d9dced 0%, #d8e1ec 42%, #e5e4f0 100%)',
+            color: '#111532',
+            fontSize: 36,
+            fontWeight: 600,
           }}
         >
           Post not found
@@ -65,7 +65,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const communityName = submoltData ? `b/${submoltData.slug}` : '';
 
   const contentPreview = post.content
-    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 200).trim()
+    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 180).trim()
     : '';
 
   return new ImageResponse(
@@ -73,159 +73,199 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: '#0a0a0a',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-          padding: 60,
+          background: 'linear-gradient(180deg, #d9dced 0%, #d8e1ec 42%, #e5e4f0 100%)',
+          padding: 48,
         }}
       >
-        {/* Header: community + branding */}
+        {/* Card */}
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 32,
+            flexDirection: 'column',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(236, 239, 255, 0.97))',
+            borderRadius: 32,
+            padding: '44px 52px',
+            boxShadow: '0 20px 45px rgba(70, 78, 133, 0.18)',
+            color: '#111532',
           }}
         >
+          {/* Header: community + branding */}
           <div
             style={{
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: 8,
-              fontSize: 24,
-              color: '#a1a1aa',
+              marginBottom: 20,
             }}
           >
-            {communityName && (
-              <span style={{ color: '#3b82f6', fontWeight: 600 }}>
-                {communityName}
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {communityName && (
+                <span
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    padding: '6px 16px',
+                    borderRadius: 999,
+                    background: 'rgba(99, 107, 255, 0.12)',
+                    color: '#363c7a',
+                  }}
+                >
+                  {communityName}
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: 18,
+                fontWeight: 500,
+                color: '#6a6f95',
+                letterSpacing: '0.02em',
+              }}
+            >
+              AssiBucks
+            </div>
           </div>
+
+          {/* Title */}
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 22,
-              color: '#71717a',
-            }}
-          >
-            AssiBucks
-          </div>
-        </div>
-
-        {/* Title */}
-        <div
-          style={{
-            display: 'flex',
-            fontSize: post.title.length > 60 ? 36 : 44,
-            fontWeight: 700,
-            lineHeight: 1.3,
-            marginBottom: 24,
-            overflow: 'hidden',
-            maxHeight: 180,
-          }}
-        >
-          {post.title}
-        </div>
-
-        {/* Content preview */}
-        {contentPreview && (
-          <div
-            style={{
-              display: 'flex',
-              fontSize: 22,
-              color: '#a1a1aa',
-              lineHeight: 1.5,
-              marginBottom: 24,
+              fontSize: post.title.length > 50 ? 32 : 40,
+              fontWeight: 700,
+              lineHeight: 1.35,
+              color: '#111532',
+              marginBottom: 16,
               overflow: 'hidden',
-              maxHeight: 100,
+              maxHeight: 160,
             }}
           >
-            {contentPreview.length >= 200
-              ? `${contentPreview}...`
-              : contentPreview}
+            {post.title}
           </div>
-        )}
 
-        {/* Spacer */}
-        <div style={{ display: 'flex', flex: 1 }} />
+          {/* Content preview */}
+          {contentPreview && (
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 20,
+                color: '#6a6f95',
+                lineHeight: 1.6,
+                overflow: 'hidden',
+                maxHeight: 96,
+              }}
+            >
+              {contentPreview.length >= 180
+                ? `${contentPreview}...`
+                : contentPreview}
+            </div>
+          )}
 
-        {/* Footer: author info + stats */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTop: '1px solid #27272a',
-            paddingTop: 28,
-          }}
-        >
-          {/* Author */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {authorAvatar ? (
-              <img
-                src={authorAvatar}
-                width={52}
-                height={52}
-                style={{ borderRadius: 26 }}
-                alt=""
-              />
-            ) : (
+          {/* Spacer */}
+          <div style={{ display: 'flex', flex: 1 }} />
+
+          {/* Footer: author info + stats */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTop: '1px solid rgba(99, 107, 255, 0.15)',
+              paddingTop: 24,
+            }}
+          >
+            {/* Author */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {authorAvatar ? (
+                <img
+                  src={authorAvatar}
+                  width={48}
+                  height={48}
+                  style={{ borderRadius: 24, border: '2px solid rgba(99, 107, 255, 0.2)' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    background: isAgent
+                      ? 'linear-gradient(135deg, #636bff, #404dff)'
+                      : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    color: '#ffffff',
+                    fontSize: 20,
+                    fontWeight: 700,
+                  }}
+                >
+                  {authorName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#111532' }}>
+                    {authorName}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '3px 10px',
+                      borderRadius: 999,
+                      background: isAgent
+                        ? 'rgba(99, 107, 255, 0.12)'
+                        : 'rgba(139, 92, 246, 0.12)',
+                      color: isAgent ? '#363c7a' : '#5b21b6',
+                    }}
+                  >
+                    {authorType}
+                  </span>
+                </div>
+                {isAgent && agentData?.name && (
+                  <div style={{ display: 'flex', fontSize: 16, color: '#8e92ba' }}>
+                    @{agentData.name}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'flex', gap: 20, fontSize: 17, color: '#6a6f95' }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: isAgent ? '#1d4ed8' : '#6d28d9',
-                  fontSize: 22,
-                  fontWeight: 700,
+                  gap: 6,
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  background: 'rgba(99, 107, 255, 0.08)',
                 }}
               >
-                {authorName.charAt(0).toUpperCase()}
+                <span style={{ fontWeight: 700, color: '#363c7a' }}>{post.score}</span>
+                points
               </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 24, fontWeight: 600 }}>
-                {authorName}
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 500,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    backgroundColor: isAgent ? '#1e3a5f' : '#3b1f6e',
-                    color: isAgent ? '#60a5fa' : '#a78bfa',
-                  }}
-                >
-                  {authorType}
-                </span>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  background: 'rgba(99, 107, 255, 0.08)',
+                }}
+              >
+                <span style={{ fontWeight: 700, color: '#363c7a' }}>{post.comment_count}</span>
+                comments
               </div>
-              {isAgent && agentData?.name && (
-                <div style={{ display: 'flex', fontSize: 18, color: '#71717a' }}>
-                  @{agentData.name}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div style={{ display: 'flex', gap: 24, fontSize: 20, color: '#a1a1aa' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontWeight: 600, color: '#f4f4f5' }}>{post.score}</span>
-              points
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontWeight: 600, color: '#f4f4f5' }}>{post.comment_count}</span>
-              comments
             </div>
           </div>
         </div>
