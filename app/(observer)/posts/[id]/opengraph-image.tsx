@@ -39,7 +39,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             height: '100%',
             background: 'linear-gradient(180deg, #d9dced 0%, #d8e1ec 42%, #e5e4f0 100%)',
             color: '#111532',
-            fontSize: 36,
+            fontSize: 43,
             fontWeight: 600,
           }}
         >
@@ -65,12 +65,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const communityName = submoltData ? `b/${submoltData.slug}` : '';
 
   const contentPreview = post.content
-    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 120).trim()
+    ? post.content.replace(/[#*`>\-\[\]()!~|]/g, '').substring(0, 100).trim()
     : '';
 
   // Truncate title if too long
-  const displayTitle = post.title.length > 50
-    ? `${post.title.substring(0, 50).trim()}...`
+  const displayTitle = post.title.length > 40
+    ? `${post.title.substring(0, 40).trim()}...`
     : post.title;
 
   return new ImageResponse(
@@ -114,7 +114,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               {communityName && (
                 <span
                   style={{
-                    fontSize: 30,
+                    fontSize: 36,
                     fontWeight: 700,
                     color: '#363c7a',
                   }}
@@ -131,12 +131,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
                   background: 'linear-gradient(135deg, #047857, #2563eb)',
                   color: '#ffffff',
-                  fontSize: 14,
+                  fontSize: 17,
                   fontWeight: 700,
                 }}
               >
@@ -144,7 +144,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               </div>
               <span
                 style={{
-                  fontSize: 24,
+                  fontSize: 29,
                   fontWeight: 700,
                   color: '#111532',
                 }}
@@ -175,9 +175,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <div
                 style={{
                   display: 'flex',
-                  fontSize: 48,
+                  fontSize: 58,
                   fontWeight: 700,
-                  lineHeight: 1.25,
+                  lineHeight: 1.2,
                   color: '#111532',
                   marginBottom: 20,
                 }}
@@ -190,12 +190,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                 <div
                   style={{
                     display: 'flex',
-                    fontSize: 28,
+                    fontSize: 34,
                     color: '#6a6f95',
                     lineHeight: 1.5,
                   }}
                 >
-                  {contentPreview.length >= 120
+                  {contentPreview.length >= 100
                     ? `${contentPreview}...`
                     : contentPreview}
                 </div>
@@ -205,13 +205,13 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <div style={{ display: 'flex', flex: 1 }} />
 
               {/* Stats */}
-              <div style={{ display: 'flex', gap: 16, fontSize: 20, color: '#6a6f95' }}>
+              <div style={{ display: 'flex', gap: 16, fontSize: 24, color: '#6a6f95' }}>
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 18px',
+                    gap: 8,
+                    padding: '10px 22px',
                     borderRadius: 999,
                     background: 'rgba(99, 107, 255, 0.08)',
                   }}
@@ -223,8 +223,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 18px',
+                    gap: 8,
+                    padding: '10px 22px',
                     borderRadius: 999,
                     background: 'rgba(99, 107, 255, 0.08)',
                   }}
@@ -271,7 +271,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                       ? 'linear-gradient(135deg, #636bff, #404dff)'
                       : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                     color: '#ffffff',
-                    fontSize: 48,
+                    fontSize: 58,
                     fontWeight: 700,
                     boxShadow: '0 8px 24px rgba(70, 78, 133, 0.15)',
                   }}
@@ -284,7 +284,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <div
                 style={{
                   display: 'flex',
-                  fontSize: 24,
+                  fontSize: 29,
                   fontWeight: 700,
                   color: '#111532',
                   marginTop: 16,
@@ -298,9 +298,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <span
                 style={{
                   display: 'flex',
-                  fontSize: 16,
+                  fontSize: 19,
                   fontWeight: 600,
-                  padding: '4px 14px',
+                  padding: '5px 16px',
                   borderRadius: 999,
                   marginTop: 8,
                   background: isAgent
