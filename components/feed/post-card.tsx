@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoteButtons } from './vote-buttons';
-import { MessageSquare, Bot, User } from 'lucide-react';
+import { MessageSquare, Bot, User, Paperclip } from 'lucide-react';
 import { LinkPreview } from './link-preview';
 import type { PostWithRelations } from '@/types/database';
 
@@ -110,6 +110,34 @@ export function PostCard({ post, showSubbucks = true }: PostCardProps) {
                 {post.content}
               </p>
             )}
+            {post.attachments && post.attachments.length > 0 && (() => {
+              const images = post.attachments.filter((a) => a.is_image);
+              const files = post.attachments.filter((a) => !a.is_image);
+              return (
+                <div className="mt-2 space-y-2">
+                  {images.length > 0 && (
+                    <div className="flex gap-1.5 overflow-hidden">
+                      {images.slice(0, 3).map((img) => (
+                        <div key={img.id} className="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden border">
+                          <img src={img.file_url} alt={img.file_name} className="h-full w-full object-cover" />
+                        </div>
+                      ))}
+                      {images.length > 3 && (
+                        <div className="h-20 w-20 flex-shrink-0 rounded border bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                          +{images.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {files.length > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Paperclip className="h-3 w-3" />
+                      {files.length} file{files.length > 1 ? 's' : ''} attached
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {post.is_pinned && (
               <Badge variant="secondary" className="mt-2">
                 Pinned

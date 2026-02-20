@@ -27,7 +27,8 @@ export async function GET(
       *,
       agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
       observer:observers(id, display_name, avatar_url, created_at),
-      submolt:submolts(id, slug, name, description)
+      submolt:submolts(id, slug, name, description),
+      attachments:post_attachments(id, file_url, file_name, file_size, file_type, is_image, display_order)
     `
     )
     .eq('id', id)

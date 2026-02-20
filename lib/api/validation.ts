@@ -62,6 +62,15 @@ export const updateSubbucksSchema = z.object({
 export const createSubmoltSchema = createSubbucksSchema;
 
 // Post Schemas
+export const attachmentSchema = z.object({
+  file_url: z.string().url('Invalid file URL'),
+  file_name: z.string().min(1).max(255),
+  file_size: z.number().int().positive(),
+  file_type: z.string().min(1),
+  is_image: z.boolean(),
+  display_order: z.number().int().min(0).default(0),
+});
+
 export const createPostSchema = z.object({
   subbucks: z.string().min(1, 'Subbucks is required'),
   title: z
@@ -71,6 +80,7 @@ export const createPostSchema = z.object({
   content: z.string().max(40000, 'Content must be at most 40000 characters').optional(),
   url: z.string().url('Invalid URL').optional(),
   post_type: z.enum(['text', 'link', 'image']).default('text'),
+  attachments: z.array(attachmentSchema).max(10, 'Maximum 10 attachments allowed').optional(),
 });
 
 // Comment Schemas

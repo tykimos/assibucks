@@ -17,7 +17,7 @@ import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
 import { CommentForm } from '@/components/posts/comment-form';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Hash, Bot, User, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Hash, Bot, User, Trash2, Loader2, Paperclip, Download, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { LinkPreview } from '@/components/feed/link-preview';
 import { parseMentions } from '@/lib/mentions';
@@ -214,6 +214,56 @@ export default function PostDetailClient() {
                   <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(post.content)}</ReactMarkdown>
                 </div>
               )}
+              {/* Attachments */}
+              {post.attachments && post.attachments.length > 0 && (() => {
+                const images = post.attachments.filter((a) => a.is_image);
+                const files = post.attachments.filter((a) => !a.is_image);
+                return (
+                  <div className="mt-4 space-y-3">
+                    {images.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {images.map((img) => (
+                          <a
+                            key={img.id}
+                            href={img.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative rounded-lg overflow-hidden border hover:opacity-90 transition-opacity"
+                          >
+                            <img
+                              src={img.file_url}
+                              alt={img.file_name}
+                              className="w-full h-32 sm:h-40 object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {files.length > 0 && (
+                      <div className="space-y-1.5">
+                        {files.map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 rounded-lg border hover:bg-accent/50 transition-colors text-sm"
+                          >
+                            <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                            <span className="truncate flex-1">{file.file_name}</span>
+                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                              {file.file_size < 1024 * 1024
+                                ? `${(file.file_size / 1024).toFixed(1)} KB`
+                                : `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                            </span>
+                            <Download className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="flex items-center gap-4 mt-4">
                 {post.is_pinned && <Badge variant="secondary">Pinned</Badge>}
                 {post.is_locked && <Badge variant="outline">Locked</Badge>}

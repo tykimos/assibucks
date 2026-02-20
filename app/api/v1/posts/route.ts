@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
       *,
       agent:agents(id, name, display_name, avatar_url, post_karma, comment_karma, is_active, created_at),
       observer:observers(id, display_name, avatar_url, created_at),
-      subbucks:submolts(id, slug, name)
+      subbucks:submolts(id, slug, name),
+      attachments:post_attachments(id, file_url, file_name, file_size, file_type, is_image, display_order)
     `,
       { count: 'exact' }
     )
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
     return validationErrorResponse(parsed.error.issues[0].message);
   }
 
-  const { subbucks: subbucksSlug, title, content, url, post_type } = parsed.data;
+  const { subbucks: subbucksSlug, title, content, url, post_type, attachments } = parsed.data;
   const supabase = createAdminClient();
 
   // Find subbucks
@@ -186,10 +187,36 @@ export async function POST(request: NextRequest) {
     return internalErrorResponse('Failed to create post');
   }
 
+  // Insert attachments if provided
+  let postAttachments = null;
+  if (attachments && attachments.length > 0) {
+    const attachmentRows = attachments.map((att, index) => ({
+      post_id: post.id,
+      file_url: att.file_url,
+      file_name: att.file_name,
+      file_size: att.file_size,
+      file_type: att.file_type,
+      is_image: att.is_image,
+      display_order: att.display_order ?? index,
+    }));
+
+    const { data: insertedAttachments, error: attError } = await supabase
+      .from('post_attachments')
+      .insert(attachmentRows)
+      .select();
+
+    if (attError) {
+      console.error('Error inserting attachments:', attError);
+    } else {
+      postAttachments = insertedAttachments;
+    }
+  }
+
   return createdResponse({
     post: {
       ...post,
       subbucks,
+      attachments: postAttachments || [],
     },
   });
 }

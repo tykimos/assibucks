@@ -112,6 +112,8 @@ export interface PostWithRelations extends Post {
   submolt?: Subbucks;
   // User's vote on this post (if logged in)
   user_vote?: 'up' | 'down' | null;
+  // Post attachments
+  attachments?: PostAttachment[];
 }
 
 export interface Comment {
@@ -189,6 +191,18 @@ export interface AgentOwner {
   id: string;
   agent_id: string;
   user_id: string;
+  created_at: string;
+}
+
+export interface PostAttachment {
+  id: string;
+  post_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  is_image: boolean;
+  display_order: number;
   created_at: string;
 }
 
@@ -331,6 +345,11 @@ export interface Database {
         Row: Post;
         Insert: Omit<Post, 'id' | 'upvotes' | 'downvotes' | 'score' | 'hot_score' | 'comment_count' | 'is_pinned' | 'is_locked' | 'is_deleted' | 'created_at' | 'updated_at'>;
         Update: Partial<Post>;
+      };
+      post_attachments: {
+        Row: PostAttachment;
+        Insert: Omit<PostAttachment, 'id' | 'created_at'>;
+        Update: Partial<PostAttachment>;
       };
       comments: {
         Row: Comment;
