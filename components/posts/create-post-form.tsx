@@ -1,15 +1,23 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2, Send, Hash, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MarkdownToolbar } from './markdown-toolbar';
+import { parseMentions } from '@/lib/mentions';
 
 interface Subbucks {
   id: string;
@@ -47,13 +55,17 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
   const { user } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [subbucksList, setSubbucksList] = useState<Subbucks[]>([]);
   const [selectedSubbucks, setSelectedSubbucks] = useState(defaultSubbucks || 'general');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<AttachmentPreview[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pasteUploading, setPasteUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('write');
 
   useEffect(() => {
     async function fetchSubbucks() {
@@ -69,6 +81,134 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
     }
     fetchSubbucks();
   }, []);
+
+  const uploadSingleFile = useCallback(async (file: File): Promise<{
+    url: string;
+    file_name: string;
+    file_size: number;
+    file_type: string;
+    is_image: boolean;
+  } | null> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/v1/upload/post-attachment', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const result = await response.json();
+      if (result.success) {
+        return result.data;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const insertTextAtCursor = useCallback((text: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => prev + text);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newContent = content.substring(0, start) + text + content.substring(end);
+    setContent(newContent);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const newPos = start + text.length;
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  }, [content]);
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+
+        if (attachments.length >= 10) {
+          setError('Maximum 10 attachments');
+          return;
+        }
+
+        setPasteUploading(true);
+
+        // Add placeholder text
+        const placeholder = '![Uploading image...]()';
+        const textarea = textareaRef.current;
+        const cursorPos = textarea?.selectionStart ?? content.length;
+        const newContent = content.substring(0, cursorPos) + placeholder + content.substring(cursorPos);
+        setContent(newContent);
+
+        const uploaded = await uploadSingleFile(file);
+
+        if (uploaded) {
+          // Replace placeholder with actual image
+          setContent((prev) => prev.replace(placeholder, `![${uploaded.file_name}](${uploaded.url})`));
+
+          // Add to attachments list
+          setAttachments((prev) => [
+            ...prev,
+            {
+              file,
+              previewUrl: URL.createObjectURL(file),
+              uploading: false,
+              uploaded,
+            },
+          ]);
+        } else {
+          // Remove placeholder
+          setContent((prev) => prev.replace(placeholder, ''));
+          setError('Failed to upload pasted image');
+        }
+
+        setPasteUploading(false);
+        return;
+      }
+    }
+  }, [content, attachments.length, uploadSingleFile]);
+
+  const handleImageInsert = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      if (attachments.length >= 10) break;
+
+      setPasteUploading(true);
+      const uploaded = await uploadSingleFile(file);
+
+      if (uploaded) {
+        insertTextAtCursor(`![${uploaded.file_name}](${uploaded.url})\n`);
+        setAttachments((prev) => [
+          ...prev,
+          {
+            file,
+            previewUrl: URL.createObjectURL(file),
+            uploading: false,
+            uploaded,
+          },
+        ]);
+      } else {
+        setError('Failed to upload image');
+      }
+      setPasteUploading(false);
+    }
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  }, [attachments.length, uploadSingleFile, insertTextAtCursor]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -88,7 +228,6 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
 
     setAttachments((prev) => [...prev, ...newAttachments]);
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -117,7 +256,6 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
     for (let i = 0; i < attachments.length; i++) {
       const att = attachments[i];
 
-      // Already uploaded
       if (att.uploaded) {
         results.push({
           file_url: att.uploaded.url,
@@ -130,7 +268,6 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
         continue;
       }
 
-      // Upload
       setAttachments((prev) =>
         prev.map((a, idx) => (idx === i ? { ...a, uploading: true, error: undefined } : a))
       );
@@ -190,7 +327,6 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
     setError(null);
 
     try {
-      // Upload attachments first
       let uploadedAttachments;
       if (attachments.length > 0) {
         uploadedAttachments = await uploadAttachments();
@@ -221,12 +357,10 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
         return;
       }
 
-      // Clean up preview URLs
       attachments.forEach((att) => {
         if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
       });
 
-      // Clear form and redirect
       setTitle('');
       setContent('');
       setAttachments([]);
@@ -292,16 +426,69 @@ export function CreatePostForm({ defaultSubbucks, onSuccess, compact }: CreatePo
       </div>
 
       <div>
-        <Label htmlFor="content" className="text-xs">Content (optional)</Label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Add more details... (Markdown supported)"
-          className={cn("mt-1", compact ? "min-h-[80px]" : "min-h-[120px]")}
-          maxLength={10000}
-        />
+        <Label className="text-xs">Content (optional, Markdown supported)</Label>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-1">
+          <TabsList className="h-8">
+            <TabsTrigger value="write" className="text-xs px-3 h-7">Write</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs px-3 h-7">Preview</TabsTrigger>
+          </TabsList>
+          <TabsContent value="write" className="mt-1.5">
+            <div className="border rounded-md p-2">
+              <MarkdownToolbar
+                textareaRef={textareaRef}
+                value={content}
+                onChange={setContent}
+                onImageClick={() => imageInputRef.current?.click()}
+              />
+              <Textarea
+                ref={textareaRef}
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onPaste={handlePaste}
+                placeholder="Add more details... (Markdown supported, paste images with Ctrl+V)"
+                className={cn("border-0 p-0 focus-visible:ring-0 resize-y", compact ? "min-h-[80px]" : "min-h-[120px]")}
+                maxLength={10000}
+              />
+              {pasteUploading && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Uploading image...
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="preview" className="mt-1.5">
+            <div className={cn(
+              "border rounded-md p-3",
+              compact ? "min-h-[80px]" : "min-h-[120px]"
+            )}>
+              {content.trim() ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {parseMentions(content)}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nothing to preview</p>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Hidden image input for toolbar image button */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleImageInsert}
+        className="hidden"
+      />
 
       {/* Attachments */}
       <div>
