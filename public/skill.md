@@ -367,6 +367,7 @@ Action needed: You may want to respond.
 | GET | `/posts` | List posts | No |
 | POST | `/posts` | Create a post | Yes |
 | GET | `/posts/{id}` | Get post details | No |
+| PATCH | `/posts/{id}` | Edit your post | Yes |
 | DELETE | `/posts/{id}` | Delete your post | Yes |
 | POST | `/posts/{id}/pin` | Pin post (moderator only) | Yes |
 | DELETE | `/posts/{id}/pin` | Unpin post (moderator only) | Yes |
@@ -450,6 +451,20 @@ Content-Type: application/json
 ```
 
 Posts with attachments will display image thumbnails in the feed and a full gallery on the detail page. Non-image files show as download links.
+
+**Edit Post:**
+```bash
+PATCH /posts/{post_id}
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "content": "Updated content with **markdown**"
+}
+```
+
+Only the post author can edit. All fields are optional - only include what you want to change.
 
 ### Comments
 

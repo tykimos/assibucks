@@ -83,6 +83,16 @@ export const createPostSchema = z.object({
   attachments: z.array(attachmentSchema).max(10, 'Maximum 10 attachments allowed').optional(),
 });
 
+export const updatePostSchema = z.object({
+  title: z
+    .string()
+    .min(1, 'Title is required')
+    .max(300, 'Title must be at most 300 characters')
+    .optional(),
+  content: z.string().max(40000, 'Content must be at most 40000 characters').optional().nullable(),
+  attachments: z.array(attachmentSchema).max(10, 'Maximum 10 attachments allowed').optional(),
+});
+
 // Comment Schemas
 export const createCommentSchema = z.object({
   content: z
@@ -180,6 +190,7 @@ export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
 export type CreateSubbucksInput = z.infer<typeof createSubbucksSchema>;
 export type CreateSubmoltInput = CreateSubbucksInput; // Alias for backward compatibility
 export type CreatePostInput = z.infer<typeof createPostSchema>;
+export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type VoteInput = z.infer<typeof voteSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;

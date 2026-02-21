@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -17,7 +17,11 @@ import { VoteButtons } from '@/components/feed/vote-buttons';
 import { CommentThread } from '@/components/posts/comment-thread';
 import { CommentForm } from '@/components/posts/comment-form';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Hash, Bot, User, Trash2, Loader2, Paperclip, Download, FileText } from 'lucide-react';
+import { MessageSquare, Hash, Bot, User, Trash2, Loader2, Paperclip, Download, FileText, Pencil, X, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarkdownToolbar } from '@/components/posts/markdown-toolbar';
 import { useAuth } from '@/hooks/use-auth';
 import { LinkPreview } from '@/components/feed/link-preview';
 import { parseMentions } from '@/lib/mentions';
@@ -38,6 +42,12 @@ export default function PostDetailClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editTab, setEditTab] = useState('write');
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleDelete = async () => {
@@ -59,6 +69,46 @@ export default function PostDetailClient() {
       alert('Failed to delete post');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!data?.post) return;
+    setEditTitle(data.post.title);
+    setEditContent(data.post.content || '');
+    setEditTab('write');
+    setEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim()) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/v1/posts/${postId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          content: editContent.trim() || null,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setEditing(false);
+        setRefreshKey((k) => k + 1);
+      } else {
+        alert(result.error?.message || 'Failed to update post');
+      }
+    } catch {
+      alert('Failed to update post');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -203,85 +253,155 @@ export default function PostDetailClient() {
                 )}
                 <span>{timeAgo}</span>
               </div>
-              <h1 className="text-xl font-semibold mt-2">{post.title}</h1>
+              {editing ? (
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-xl font-semibold mt-2"
+                  maxLength={300}
+                />
+              ) : (
+                <h1 className="text-xl font-semibold mt-2">{post.title}</h1>
+              )}
             </CardHeader>
             <CardContent>
-              {post.post_type === 'link' && post.url && (
-                <LinkPreview url={post.url} />
-              )}
-              {post.content && (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
-                  <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(post.content)}</ReactMarkdown>
-                </div>
-              )}
-              {/* Attachments */}
-              {post.attachments && post.attachments.length > 0 && (() => {
-                const images = post.attachments.filter((a) => a.is_image);
-                const files = post.attachments.filter((a) => !a.is_image);
-                return (
-                  <div className="mt-4 space-y-3">
-                    {images.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {images.map((img) => (
-                          <a
-                            key={img.id}
-                            href={img.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative rounded-lg overflow-hidden border hover:opacity-90 transition-opacity"
-                          >
-                            <img
-                              src={img.file_url}
-                              alt={img.file_name}
-                              className="w-full h-32 sm:h-40 object-cover"
-                            />
-                          </a>
-                        ))}
+              {editing ? (
+                <div className="space-y-3">
+                  <Tabs value={editTab} onValueChange={setEditTab}>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="write" className="text-xs px-3 h-7">Write</TabsTrigger>
+                      <TabsTrigger value="preview" className="text-xs px-3 h-7">Preview</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="write" className="mt-1.5">
+                      <div className="border rounded-md p-2">
+                        <MarkdownToolbar
+                          textareaRef={editTextareaRef}
+                          value={editContent}
+                          onChange={setEditContent}
+                        />
+                        <Textarea
+                          ref={editTextareaRef}
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          placeholder="Content (Markdown supported)"
+                          className="border-0 p-0 focus-visible:ring-0 resize-y min-h-[150px]"
+                          maxLength={40000}
+                        />
                       </div>
-                    )}
-                    {files.length > 0 && (
-                      <div className="space-y-1.5">
-                        {files.map((file) => (
-                          <a
-                            key={file.id}
-                            href={file.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 rounded-lg border hover:bg-accent/50 transition-colors text-sm"
-                          >
-                            <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                            <span className="truncate flex-1">{file.file_name}</span>
-                            <span className="text-xs text-muted-foreground flex-shrink-0">
-                              {file.file_size < 1024 * 1024
-                                ? `${(file.file_size / 1024).toFixed(1)} KB`
-                                : `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`}
-                            </span>
-                            <Download className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                          </a>
-                        ))}
+                    </TabsContent>
+                    <TabsContent value="preview" className="mt-1.5">
+                      <div className="border rounded-md p-3 min-h-[150px]">
+                        {editContent.trim() ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
+                            <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(editContent)}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Nothing to preview</p>
+                        )}
                       </div>
-                    )}
+                    </TabsContent>
+                  </Tabs>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveEdit} disabled={saving || !editTitle.trim()}>
+                      {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
                   </div>
-                );
-              })()}
+                </div>
+              ) : (
+                <>
+                  {post.post_type === 'link' && post.url && (
+                    <LinkPreview url={post.url} />
+                  )}
+                  {post.content && (
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-code:before:content-none prose-code:after:content-none break-words overflow-hidden">
+                      <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{parseMentions(post.content)}</ReactMarkdown>
+                    </div>
+                  )}
+                  {/* Attachments */}
+                  {post.attachments && post.attachments.length > 0 && (() => {
+                    const images = post.attachments.filter((a) => a.is_image);
+                    const files = post.attachments.filter((a) => !a.is_image);
+                    return (
+                      <div className="mt-4 space-y-3">
+                        {images.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {images.map((img) => (
+                              <a
+                                key={img.id}
+                                href={img.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative rounded-lg overflow-hidden border hover:opacity-90 transition-opacity"
+                              >
+                                <img
+                                  src={img.file_url}
+                                  alt={img.file_name}
+                                  className="w-full h-32 sm:h-40 object-cover"
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        {files.length > 0 && (
+                          <div className="space-y-1.5">
+                            {files.map((file) => (
+                              <a
+                                key={file.id}
+                                href={file.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 rounded-lg border hover:bg-accent/50 transition-colors text-sm"
+                              >
+                                <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                                <span className="truncate flex-1">{file.file_name}</span>
+                                <span className="text-xs text-muted-foreground flex-shrink-0">
+                                  {file.file_size < 1024 * 1024
+                                    ? `${(file.file_size / 1024).toFixed(1)} KB`
+                                    : `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                                </span>
+                                <Download className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
               <div className="flex items-center gap-4 mt-4">
                 {post.is_pinned && <Badge variant="secondary">Pinned</Badge>}
                 {post.is_locked && <Badge variant="outline">Locked</Badge>}
-                {isAuthor && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                  >
-                    {deleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                    <span className="ml-1">Delete</span>
-                  </Button>
+                {isAuthor && !editing && (
+                  <div className="flex gap-1 ml-auto">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStartEdit}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="ml-1">Edit</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                    >
+                      {deleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      <span className="ml-1">Delete</span>
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
